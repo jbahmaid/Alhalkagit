@@ -64,3 +64,52 @@ export async function api<T>(path: string, opts: Options = {}): Promise<T> {
   }
   return body as T;
 }
+
+function xhrUpload(
+  path: string,
+  form: FormData,
+  token: string | null,
+  onProgress?: (fraction: number) => void,
+): Promise<{ status: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api${path}`);
+    xhr.setRequestHeader('accept', 'application/json');
+    if (token) xhr.setRequestHeader('authorization', `Bearer ${token}`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        body = null;
+      }
+      resolve({ status: xhr.status, body });
+    };
+    xhr.onerror = () => reject(new ApiError(0, 'NETWORK'));
+    xhr.onabort = () => reject(new ApiError(0, 'NETWORK'));
+    xhr.send(form);
+  });
+}
+
+/**
+ * Multipart upload through the same-origin proxy, with upload progress (fetch has none).
+ * Refreshes the access token once on 401, like `api`.
+ */
+export async function upload<T>(
+  path: string,
+  form: FormData,
+  onProgress?: (fraction: number) => void,
+): Promise<T> {
+  let res = await xhrUpload(path, form, getAccessToken(), onProgress);
+  if (res.status === 401 && (await refreshSession())) {
+    res = await xhrUpload(path, form, getAccessToken(), onProgress);
+  }
+  if (res.status >= 200 && res.status < 300) return res.body as T;
+  const err = (res.body ?? {}) as Partial<ApiErrorBody>;
+  const fallback = res.status === 413 ? 'FILE_TOO_LARGE' : res.status >= 500 ? 'INTERNAL_ERROR' : 'FORBIDDEN';
+  throw new ApiError(res.status, err.code ?? fallback, err.details);
+}

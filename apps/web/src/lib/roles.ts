@@ -10,7 +10,7 @@ export const ROLE_NAV: Record<'SEEKER' | 'EMPLOYER' | 'ADMIN', NavItem[]> = {
   SEEKER: [
     { href: '/seeker/jobs', labelKey: 'jobs', enabled: false },
     { href: '/seeker/requests', labelKey: 'myRequests', enabled: false },
-    { href: '/seeker', labelKey: 'myProfile', enabled: true },
+    { href: '/seeker/profile', labelKey: 'myProfile', enabled: true },
   ],
   EMPLOYER: [
     { href: '/employer', labelKey: 'dashboard', enabled: true },

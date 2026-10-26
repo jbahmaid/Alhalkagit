@@ -105,7 +105,7 @@ function watch(page, label) {
     const code = await codeFor(email, started);
     await page.fill('#otp', code);
     await page.getByRole('button', { name: 'تأكيد' }).click();
-    await page.waitForURL(/\/ar\/seeker$/);
+    await page.waitForURL(/\/ar\/seeker\/profile$/);
     await page.waitForSelector('h1:has-text("ملفي المهني")');
     return `${email}, code ${code}`;
   });

@@ -5,3 +5,4 @@ export * from './errors';
 export * from './lookups';
 export * from './matching';
 export * from './locale';
+export * from './profile';

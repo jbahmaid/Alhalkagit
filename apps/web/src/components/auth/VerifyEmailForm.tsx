@@ -50,7 +50,8 @@ export function VerifyEmailForm({ email, wait }: { email?: string; wait: number 
       const session = await api<SessionDto>('/auth/verify-email', { body: { email, code }, auth: false });
       setSession(session);
       toast(t('auth.verify.verified'));
-      router.replace(homeFor(session.user.role));
+      // New seekers start the profile wizard right away (S-05).
+      router.replace(session.user.role === 'SEEKER' ? '/seeker/profile' : homeFor(session.user.role));
     } catch (err) {
       if (err instanceof ApiError && err.code === 'AUTH_ALREADY_VERIFIED') {
         router.replace('/login');
