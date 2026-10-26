@@ -43,10 +43,19 @@ describe('profile rules: dates', () => {
       start: '2022-05-01',
       end: null,
     });
-    const order = positionDateRules({ startDate: '2022-05', endDate: '2021-01' }, null, TODAY, 'positions.1.');
+    const order = positionDateRules(
+      { startDate: '2022-05', endDate: '2021-01' },
+      null,
+      TODAY,
+      'positions.1.',
+    );
     expect(order.errors).toEqual([{ field: 'positions.1.endDate', errors: ['DATE_ORDER'] }]);
-    expect(rules(positionDateRules({ startDate: '2027-01' }, null, TODAY).errors)).toEqual(['DATE_IN_FUTURE']);
-    expect(rules(positionDateRules({ startDate: '2026-11-01' }, null, TODAY).errors)).toEqual(['DATE_IN_FUTURE']);
+    expect(rules(positionDateRules({ startDate: '2027-01' }, null, TODAY).errors)).toEqual([
+      'DATE_IN_FUTURE',
+    ]);
+    expect(rules(positionDateRules({ startDate: '2026-11-01' }, null, TODAY).errors)).toEqual([
+      'DATE_IN_FUTURE',
+    ]);
     expect(rules(positionDateRules({ startDate: '1990-01' }, '1995-05-20', TODAY).errors)).toEqual([
       'DATE_BEFORE_BIRTH',
     ]);
@@ -107,7 +116,13 @@ describe('profile completion', () => {
   it('treats "no experience" as complete and empty tribe lists as not required', () => {
     const s = completionOf({ ...base, hasExperience: false, positionCount: 0, hasVerifier: false });
     expect(s.steps.experience).toBe(true);
-    const t = completionOf({ ...base, darId: null, fakhdhId: null, darRequired: false, fakhdhRequired: false });
+    const t = completionOf({
+      ...base,
+      darId: null,
+      fakhdhId: null,
+      darRequired: false,
+      fakhdhRequired: false,
+    });
     expect(t.steps.affiliation).toBe(true);
   });
 

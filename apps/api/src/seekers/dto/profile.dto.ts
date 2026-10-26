@@ -26,7 +26,8 @@ const lowerTrim = ({ value }: { value: unknown }) =>
 /** "" from an empty form field means "not set". */
 const emptyToNull = ({ value }: { value: unknown }) =>
   typeof value === 'string' && value.trim() === '' ? null : typeof value === 'string' ? value.trim() : value;
-const digits = ({ value }: { value: unknown }) => (typeof value === 'string' ? toLatinDigits(value).trim() : value);
+const digits = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? toLatinDigits(value).trim() : value;
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** Positions are entered as months (YYYY-MM); full dates are accepted too. */
@@ -77,7 +78,9 @@ export class PositionInputDto {
   /** Present when updating an existing position inside PATCH /experience. */
   @IsOptional() @IsUUID() id?: string;
   @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(PROFILE_LIMITS.titleMax) title!: string;
-  @Transform(emptyToNull) @IsOptional() @IsString() @MaxLength(PROFILE_LIMITS.titleMax) organization?: string | null;
+  @Transform(emptyToNull) @IsOptional() @IsString() @MaxLength(PROFILE_LIMITS.titleMax) organization?:
+    | string
+    | null;
   @Transform(emptyToNull) @IsOptional() @IsUUID() sectorId?: string | null;
   @Transform(digits) @Matches(MONTH_OR_DATE) startDate!: string;
   @Transform(emptyToNull) @IsOptional() @Matches(MONTH_OR_DATE) endDate?: string | null;

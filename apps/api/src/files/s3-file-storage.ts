@@ -39,7 +39,9 @@ export class S3FileStorage implements FileStorage {
   }
 
   async get(key: string): Promise<StoredObject> {
-    const out = await this.call(() => this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key })));
+    const out = await this.call(() =>
+      this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key })),
+    );
     if (!out.Body) throw Errors.notFound('CV_NOT_FOUND');
     return { body: out.Body as Readable, contentLength: out.ContentLength };
   }

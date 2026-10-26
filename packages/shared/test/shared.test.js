@@ -23,10 +23,24 @@ test('locales', () => {
   assert.ok(!isLocale('fr'));
 });
 
-const { normalizeSaudiMobile, localSaudiMobile, ageFrom, isNationalIdFormat, normalizePhone, toLatinDigits } = require('../dist');
+const {
+  normalizeSaudiMobile,
+  localSaudiMobile,
+  ageFrom,
+  isNationalIdFormat,
+  normalizePhone,
+  toLatinDigits,
+} = require('../dist');
 
 test('saudi mobile numbers', () => {
-  for (const v of ['0512345678', '512345678', '+966512345678', '00966512345678', '966 51 234 5678', '٠٥١٢٣٤٥٦٧٨']) {
+  for (const v of [
+    '0512345678',
+    '512345678',
+    '+966512345678',
+    '00966512345678',
+    '966 51 234 5678',
+    '٠٥١٢٣٤٥٦٧٨',
+  ]) {
     assert.equal(normalizeSaudiMobile(v), '+966512345678', v);
   }
   for (const v of ['0412345678', '05123', '+971501234567', '', null, '05123456789']) {

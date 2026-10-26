@@ -112,7 +112,9 @@ export class CvService implements OnModuleInit {
             removeOnFail: 5000,
           },
         )
-        .catch((err: Error) => this.logger.error(`Could not enqueue CV analysis ${analysisId}: ${err.message}`));
+        .catch((err: Error) =>
+          this.logger.error(`Could not enqueue CV analysis ${analysisId}: ${err.message}`),
+        );
     }
     return this.profiles.get(userId);
   }

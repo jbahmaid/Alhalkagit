@@ -9,7 +9,10 @@ const docx = Buffer.concat([
   Buffer.from([0x50, 0x4b, 0x03, 0x04]),
   Buffer.from('....[Content_Types].xml....word/document.xml....'),
 ]);
-const otherZip = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from('xl/workbook.xml [Content_Types].xml')]);
+const otherZip = Buffer.concat([
+  Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+  Buffer.from('xl/workbook.xml [Content_Types].xml'),
+]);
 const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 const exe = Buffer.from('MZ\x90\x00 this program cannot be run in DOS mode');
 
@@ -58,7 +61,9 @@ describe('signed file links', () => {
     expect(link.expiresAt).toBe('2026-01-01T12:05:00.000Z');
     const token = link.url.split('/').pop()!;
     expect(links.verify(token, now + 299_000)).toEqual({ fileId: 'file-1', userId: 'user-1' });
-    expect(() => links.verify(token, now + 301_000)).toThrow(expect.objectContaining({ code: 'FILE_LINK_EXPIRED' }));
+    expect(() => links.verify(token, now + 301_000)).toThrow(
+      expect.objectContaining({ code: 'FILE_LINK_EXPIRED' }),
+    );
   });
 
   it('rejects tampered or foreign tokens', () => {

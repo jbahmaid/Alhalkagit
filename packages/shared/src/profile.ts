@@ -3,7 +3,15 @@
  * FR-2.1.2 to FR-2.1.9.
  */
 
-export const PROFILE_STEPS = ['PERSONAL', 'TRIBE', 'CONTACT', 'EDUCATION', 'EXPERIENCE', 'CV', 'COMPLETED'] as const;
+export const PROFILE_STEPS = [
+  'PERSONAL',
+  'TRIBE',
+  'CONTACT',
+  'EDUCATION',
+  'EXPERIENCE',
+  'CV',
+  'COMPLETED',
+] as const;
 export type ProfileStep = (typeof PROFILE_STEPS)[number];
 
 /** The six wizard steps, in order. Step n of 6 in the UI is WIZARD_STEPS[n - 1]. */

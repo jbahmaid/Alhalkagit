@@ -91,6 +91,7 @@ export function positionDateRules(
 export function experienceRules(hasExperience: boolean, years: number | null | undefined): Errs {
   if (!hasExperience) return [];
   if (years === null || years === undefined) return [err('yearsOfExperience', 'isNotEmpty')];
-  if (years < 0 || years > PROFILE_LIMITS.maxYearsOfExperience) return [err('yearsOfExperience', 'YEARS_RANGE')];
+  if (years < 0 || years > PROFILE_LIMITS.maxYearsOfExperience)
+    return [err('yearsOfExperience', 'YEARS_RANGE')];
   return [];
 }

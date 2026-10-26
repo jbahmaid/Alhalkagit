@@ -50,13 +50,19 @@ const storage: FileStorage = {
 const queue = { add: jest.fn().mockResolvedValue(undefined) };
 
 function node(args: string[], env: NodeJS.ProcessEnv) {
-  const res = spawnSync(process.execPath, args, { cwd: API_ROOT, env: { ...process.env, ...env }, encoding: 'utf8' });
+  const res = spawnSync(process.execPath, args, {
+    cwd: API_ROOT,
+    env: { ...process.env, ...env },
+    encoding: 'utf8',
+  });
   if (res.status !== 0) throw new Error(`${args.join(' ')} failed:\n${res.stdout}\n${res.stderr}`);
   return res.stdout;
 }
 
 async function seekerAccount(email: string) {
-  const user = await raw.user.create({ data: { email, passwordHash: 'x', role: 'SEEKER', status: 'ACTIVE' } });
+  const user = await raw.user.create({
+    data: { email, passwordHash: 'x', role: 'SEEKER', status: 'ACTIVE' },
+  });
   await raw.seekerProfile.create({ data: { userId: user.id } });
   return user;
 }
@@ -146,8 +152,12 @@ describe('seeker profile on a real database', () => {
 
     let p = await as(userId, () => profiles.updatePersonal(userId, personal('١٠١٢٣٤٥٦٧٨')));
     expect(p.completionStep).toBe('TRIBE');
-    p = await as(userId, () => profiles.updateAffiliation(userId, { darId: lookups.dar, fakhdhId: lookups.fakhdh }));
-    p = await as(userId, () => profiles.updateContact(userId, { mobile: '0551234567', email: 'k@example.com' }));
+    p = await as(userId, () =>
+      profiles.updateAffiliation(userId, { darId: lookups.dar, fakhdhId: lookups.fakhdh }),
+    );
+    p = await as(userId, () =>
+      profiles.updateContact(userId, { mobile: '0551234567', email: 'k@example.com' }),
+    );
     p = await as(userId, () =>
       profiles.updateEducation(userId, {
         educationLevelId: lookups.level,
@@ -201,7 +211,9 @@ describe('seeker profile on a real database', () => {
   it('uploads, replaces (keeping the previous file) and removes the CV', async () => {
     const pdf = Buffer.from('%PDF-1.4\n% test\n%%EOF');
     await as(userId, () => cv.upload(userId, { originalname: 'cv-1.pdf', buffer: pdf, size: pdf.length }));
-    const p = await as(userId, () => cv.upload(userId, { originalname: 'سيرتي.pdf', buffer: pdf, size: pdf.length }));
+    const p = await as(userId, () =>
+      cv.upload(userId, { originalname: 'سيرتي.pdf', buffer: pdf, size: pdf.length }),
+    );
     expect(p.cv.file?.originalName).toBe('سيرتي.pdf');
     expect(p.cv.previousVersions).toBe(1);
     expect(p.cv.analysis?.status).toBe('SKIPPED');
@@ -210,7 +222,10 @@ describe('seeker profile on a real database', () => {
 
     const removed = await as(userId, () => cv.remove(userId));
     expect(removed.cv.file).toBeNull();
-    const files = await raw.uploadedFile.findMany({ where: { ownerUserId: userId }, orderBy: { createdAt: 'asc' } });
+    const files = await raw.uploadedFile.findMany({
+      where: { ownerUserId: userId },
+      orderBy: { createdAt: 'asc' },
+    });
     expect(files.map((f) => !!f.deletedAt)).toEqual([false, true]);
   });
 

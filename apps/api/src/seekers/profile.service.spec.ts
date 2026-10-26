@@ -21,7 +21,9 @@ async function setup(opts: { analysis?: boolean } = {}) {
   const sa = await db.country.create({ data: { isoCode: 'SA', nameAr: 'السعودية', nameEn: 'Saudi Arabia' } });
   const dar = await db.dar.create({ data: { code: 'D1', nameAr: 'د', nameEn: 'D' } });
   const fakhdh = await db.fakhdh.create({ data: { code: 'F1', nameAr: 'ف', nameEn: 'F', darId: dar.id } });
-  const level = await db.educationLevel.create({ data: { code: 'BACHELOR', nameAr: 'ب', nameEn: 'B', rank: 40 } });
+  const level = await db.educationLevel.create({
+    data: { code: 'BACHELOR', nameAr: 'ب', nameEn: 'B', rank: 40 },
+  });
   const storage = {
     put: jest.fn().mockResolvedValue(undefined),
     get: jest.fn(),
@@ -29,7 +31,15 @@ async function setup(opts: { analysis?: boolean } = {}) {
     remove: jest.fn().mockResolvedValue(undefined),
   };
   const queue = { add: jest.fn().mockResolvedValue(undefined) };
-  const cv = new CvService(prisma as any, profiles, new FileLinksService(crypto), crypto, storage, config, queue as any);
+  const cv = new CvService(
+    prisma as any,
+    profiles,
+    new FileLinksService(crypto),
+    crypto,
+    storage,
+    config,
+    queue as any,
+  );
   return { prisma, db, crypto, events, profiles, cv, storage, queue, user, sa, dar, fakhdh, level };
 }
 
@@ -52,7 +62,9 @@ async function code(p: Promise<unknown>): Promise<string> {
   } catch (e) {
     if (e instanceof AppException) {
       const details = e.details as { field: string; errors: string[] }[] | undefined;
-      return Array.isArray(details) ? `${e.code}:${details.map((d) => `${d.field}=${d.errors}`).join(',')}` : e.code;
+      return Array.isArray(details)
+        ? `${e.code}:${details.map((d) => `${d.field}=${d.errors}`).join(',')}`
+        : e.code;
     }
     throw e;
   }
@@ -88,12 +100,17 @@ describe('ProfileService: personal step and the ID number', () => {
     await c.db.person.create({
       data: { userId: 'someone-else', idNumberHash: c.crypto.hashIdNumber('NATIONAL_ID', '1012345678') },
     });
-    expect(await code(c.profiles.updatePersonal(c.user.id, personal(c.sa.id)))).toBe('PROFILE_ID_NUMBER_TAKEN');
+    expect(await code(c.profiles.updatePersonal(c.user.id, personal(c.sa.id)))).toBe(
+      'PROFILE_ID_NUMBER_TAKEN',
+    );
   });
 
   it('validates age, ID format and nationality on the server', async () => {
     const c = await setup();
-    const bad = { ...personal('00000000-0000-0000-0000-000000000000', '3012345678'), birthDate: '2016-01-01' };
+    const bad = {
+      ...personal('00000000-0000-0000-0000-000000000000', '3012345678'),
+      birthDate: '2016-01-01',
+    };
     expect(await code(c.profiles.updatePersonal(c.user.id, bad))).toBe(
       'VALIDATION_FAILED:birthDate=AGE_RANGE,idNumber=NATIONAL_ID_FORMAT,nationalityId=LOOKUP_INVALID',
     );
@@ -101,9 +118,9 @@ describe('ProfileService: personal step and the ID number', () => {
 
   it('later steps need the personal step first', async () => {
     const c = await setup();
-    expect(await code(c.profiles.updateContact(c.user.id, { mobile: '0512345678', email: 'k@example.com' }))).toBe(
-      'PROFILE_PERSONAL_REQUIRED',
-    );
+    expect(
+      await code(c.profiles.updateContact(c.user.id, { mobile: '0512345678', email: 'k@example.com' })),
+    ).toBe('PROFILE_PERSONAL_REQUIRED');
   });
 });
 
@@ -112,9 +129,9 @@ describe('ProfileService: affiliation, contact, education', () => {
     const c = await setup();
     await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
     const other = await c.db.dar.create({ data: { code: 'D2' } });
-    expect(await code(c.profiles.updateAffiliation(c.user.id, { darId: other.id, fakhdhId: c.fakhdh.id }))).toBe(
-      'VALIDATION_FAILED:fakhdhId=FAKHDH_DAR_MISMATCH',
-    );
+    expect(
+      await code(c.profiles.updateAffiliation(c.user.id, { darId: other.id, fakhdhId: c.fakhdh.id })),
+    ).toBe('VALIDATION_FAILED:fakhdhId=FAKHDH_DAR_MISMATCH');
     expect(await code(c.profiles.updateAffiliation(c.user.id, {}))).toBe(
       'VALIDATION_FAILED:darId=isNotEmpty',
     );
@@ -130,7 +147,12 @@ describe('ProfileService: affiliation, contact, education', () => {
   it('upserts one education row and rejects a graduation year before age 10', async () => {
     const c = await setup();
     await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
-    const edu = { educationLevelId: c.level.id, graduationYear: 2018, institution: 'KSU', countryId: c.sa.id };
+    const edu = {
+      educationLevelId: c.level.id,
+      graduationYear: 2018,
+      institution: 'KSU',
+      countryId: c.sa.id,
+    };
     await c.profiles.updateEducation(c.user.id, edu);
     await c.profiles.updateEducation(c.user.id, { ...edu, graduationYear: 2019 });
     expect(c.db.seekerEducation.rows).toHaveLength(1);
@@ -142,7 +164,11 @@ describe('ProfileService: affiliation, contact, education', () => {
 });
 
 describe('ProfileService: experience and positions (unlimited)', () => {
-  const pos = (title: string, startDate: string, endDate: string | null = null) => ({ title, startDate, endDate });
+  const pos = (title: string, startDate: string, endDate: string | null = null) => ({
+    title,
+    startDate,
+    endDate,
+  });
 
   it('saves the whole step: many positions in order, "present" as null, and the verifier', async () => {
     const c = await setup();
@@ -156,7 +182,11 @@ describe('ProfileService: experience and positions (unlimited)', () => {
       verifier: { name: 'Ahmed', phone: '0501112222' },
     });
     expect(dto.experience.positions.map((p) => p.title)).toEqual(list.map((p) => p.title));
-    expect(dto.experience.positions[0]).toMatchObject({ startDate: '2024-03-01', endDate: null, sortOrder: 0 });
+    expect(dto.experience.positions[0]).toMatchObject({
+      startDate: '2024-03-01',
+      endDate: null,
+      sortOrder: 0,
+    });
     expect(dto.experience.verifier).toMatchObject({ name: 'Ahmed', phone: '+966501112222' });
     expect(dto.steps.experience).toBe(true);
   });
@@ -190,7 +220,11 @@ describe('ProfileService: experience and positions (unlimited)', () => {
     expect([p1.sortOrder, p2.sortOrder, p3.sortOrder]).toEqual([0, 1, 2]);
     expect(c.db.seekerProfile.rows[0].hasExperience).toBe(true);
 
-    const updated = await c.profiles.updatePosition(c.user.id, p2.id, pos('Two (lead)', '2021-02', '2023-06'));
+    const updated = await c.profiles.updatePosition(
+      c.user.id,
+      p2.id,
+      pos('Two (lead)', '2021-02', '2023-06'),
+    );
     expect(updated).toMatchObject({ title: 'Two (lead)', endDate: '2023-06-01' });
     expect(await code(c.profiles.updatePosition(c.user.id, p2.id, pos('X', '2021-02', '2020-01')))).toBe(
       'VALIDATION_FAILED:endDate=DATE_ORDER',
@@ -198,7 +232,9 @@ describe('ProfileService: experience and positions (unlimited)', () => {
 
     const reordered = await c.profiles.reorderPositions(c.user.id, [p3.id, p1.id, p2.id]);
     expect(reordered.map((p) => p.title)).toEqual(['Three', 'One', 'Two (lead)']);
-    expect(await code(c.profiles.reorderPositions(c.user.id, [p1.id, p2.id]))).toBe('POSITIONS_ORDER_MISMATCH');
+    expect(await code(c.profiles.reorderPositions(c.user.id, [p1.id, p2.id]))).toBe(
+      'POSITIONS_ORDER_MISMATCH',
+    );
 
     await c.profiles.deletePosition(c.user.id, p1.id);
     expect((await c.profiles.listPositions(c.user.id)).map((p) => p.title)).toEqual(['Three', 'Two (lead)']);
@@ -225,7 +261,12 @@ describe('ProfileService: experience and positions (unlimited)', () => {
       verifier: { name: 'V', email: 'v@x.co' },
     });
     const dto = await c.profiles.updateExperience(c.user.id, { hasExperience: false, yearsOfExperience: 7 });
-    expect(dto.experience).toEqual({ hasExperience: false, yearsOfExperience: null, positions: [], verifier: null });
+    expect(dto.experience).toEqual({
+      hasExperience: false,
+      yearsOfExperience: null,
+      positions: [],
+      verifier: null,
+    });
     expect(await code(c.profiles.createPosition(c.user.id, pos('B', '2022-05')))).toBe('CONFLICT');
   });
 
@@ -234,7 +275,11 @@ describe('ProfileService: experience and positions (unlimited)', () => {
     await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
     expect(
       await code(
-        c.profiles.updateExperience(c.user.id, { hasExperience: true, yearsOfExperience: 1, verifier: { name: 'V' } }),
+        c.profiles.updateExperience(c.user.id, {
+          hasExperience: true,
+          yearsOfExperience: 1,
+          verifier: { name: 'V' },
+        }),
       ),
     ).toBe('VALIDATION_FAILED:verifier.phone=CONTACT_REQUIRED');
   });
@@ -267,9 +312,9 @@ describe('CvService', () => {
   it('rejects missing, oversized and wrong-type files', async () => {
     const c = await setup();
     expect(await code(c.cv.upload(c.user.id, undefined))).toBe('FILE_REQUIRED');
-    expect(await code(c.cv.upload(c.user.id, { originalname: 'a.pdf', buffer: pdf, size: 11 * 1024 * 1024 }))).toBe(
-      'FILE_TOO_LARGE',
-    );
+    expect(
+      await code(c.cv.upload(c.user.id, { originalname: 'a.pdf', buffer: pdf, size: 11 * 1024 * 1024 })),
+    ).toBe('FILE_TOO_LARGE');
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
     expect(await code(c.cv.upload(c.user.id, { originalname: 'a.pdf', buffer: png, size: png.length }))).toBe(
       'FILE_TYPE_NOT_ALLOWED',
@@ -313,15 +358,19 @@ describe('CvService', () => {
     c.db.cvAnalysis.rows[0].status = 'COMPLETED';
     c.db.cvAnalysis.rows[0].suggestedSectorId = 'x';
     const fixed = await c.cv.correctSector(c.user.id, sector.id);
-    expect(fixed).toMatchObject({ correctedSectorId: sector.id, sectorId: sector.id, suggestedSectorId: 'x' });
+    expect(fixed).toMatchObject({
+      correctedSectorId: sector.id,
+      sectorId: sector.id,
+      suggestedSectorId: 'x',
+    });
   });
 
   it('removes the stored object when the database write fails', async () => {
     const c = await setup();
     c.db.uploadedFile.create = jest.fn().mockRejectedValue(new Error('db down'));
-    await expect(c.cv.upload(c.user.id, { originalname: 'cv.pdf', buffer: pdf, size: pdf.length })).rejects.toThrow(
-      'db down',
-    );
+    await expect(
+      c.cv.upload(c.user.id, { originalname: 'cv.pdf', buffer: pdf, size: pdf.length }),
+    ).rejects.toThrow('db down');
     expect(c.storage.remove).toHaveBeenCalledWith(c.storage.put.mock.calls[0][0]);
   });
 });

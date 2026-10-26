@@ -130,7 +130,9 @@ export class ProfileService {
 
   private async snapshot(profileId: string): Promise<CompletionSnapshot> {
     const profile = await this.db.seekerProfile.findFirstOrThrow({ where: { id: profileId } });
-    const person = profile.personId ? await this.db.person.findFirst({ where: { id: profile.personId } }) : null;
+    const person = profile.personId
+      ? await this.db.person.findFirst({ where: { id: profile.personId } })
+      : null;
     const [education, positionCount, verifier] = await Promise.all([
       this.educationOf(profile.id),
       this.db.experiencePosition.count({ where: { seekerId: profile.id } }),
@@ -179,7 +181,9 @@ export class ProfileService {
   async get(userId: string): Promise<ProfileDto> {
     const profile = await this.profileOf(userId);
     const user = await this.db.user.findFirstOrThrow({ where: { id: userId }, select: { email: true } });
-    const person = profile.personId ? await this.db.person.findFirst({ where: { id: profile.personId } }) : null;
+    const person = profile.personId
+      ? await this.db.person.findFirst({ where: { id: profile.personId } })
+      : null;
     const [education, positions, verifier] = await Promise.all([
       this.educationOf(profile.id),
       this.positionsOf(profile.id),
@@ -193,7 +197,12 @@ export class ProfileService {
       ? await this.db.cvAnalysis.findFirst({ where: { fileId: file.id }, orderBy: { createdAt: 'desc' } })
       : null;
     const previousVersions = await this.db.uploadedFile.count({
-      where: { ownerUserId: userId, purpose: 'CV', ...(file ? { id: { not: file.id } } : {}), deletedAt: undefined },
+      where: {
+        ownerUserId: userId,
+        purpose: 'CV',
+        ...(file ? { id: { not: file.id } } : {}),
+        deletedAt: undefined,
+      },
     });
 
     return {
@@ -272,11 +281,15 @@ export class ProfileService {
       errors.push(err('nationalityId', 'LOOKUP_INVALID'));
     }
     const profile = await this.profileOf(userId);
-    const person = profile.personId ? await this.db.person.findFirst({ where: { id: profile.personId } }) : null;
+    const person = profile.personId
+      ? await this.db.person.findFirst({ where: { id: profile.personId } })
+      : null;
     if (!person && !dto.idNumber) errors.push(err('idNumber', 'isNotEmpty'));
 
     // ID: new number, or the stored one re-fingerprinted when only the type changed.
-    let protectedId: { idNumberEncrypted: string; idNumberHash: string; idNumberKeyVersion: number } | undefined;
+    let protectedId:
+      | { idNumberEncrypted: string; idNumberHash: string; idNumberKeyVersion: number }
+      | undefined;
     if (dto.idNumber) {
       protectedId = this.crypto.protectIdNumber(dto.idType, dto.idNumber);
     } else if (person && person.idType !== dto.idType) {
@@ -321,7 +334,8 @@ export class ProfileService {
           const next = { ...data };
           // Never compare ciphertexts (random IV): only write the ID when its fingerprint changes.
           const changes: Row = changedFields(person, next);
-          if (protectedId && protectedId.idNumberHash !== person.idNumberHash) Object.assign(changes, protectedId);
+          if (protectedId && protectedId.idNumberHash !== person.idNumberHash)
+            Object.assign(changes, protectedId);
           if (Object.keys(changes).length) {
             await this.db.person.update({ where: { id: person.id }, data: changes });
           }
@@ -349,7 +363,8 @@ export class ProfileService {
     const { darRequired, fakhdhRequired } = await this.tribeRequirements(darId);
 
     if (darId) {
-      if (!(await this.db.dar.count({ where: { id: darId, isActive: true } }))) errors.push(err('darId', 'LOOKUP_INVALID'));
+      if (!(await this.db.dar.count({ where: { id: darId, isActive: true } })))
+        errors.push(err('darId', 'LOOKUP_INVALID'));
     } else if (darRequired) errors.push(err('darId', 'isNotEmpty'));
 
     if (fakhdhId) {
@@ -361,7 +376,8 @@ export class ProfileService {
 
     await this.write(profile.id, 'affiliation', async () => {
       const changes = changedFields(person, { darId, fakhdhId });
-      if (Object.keys(changes).length) await this.db.person.update({ where: { id: person.id }, data: changes });
+      if (Object.keys(changes).length)
+        await this.db.person.update({ where: { id: person.id }, data: changes });
     });
     return this.get(userId);
   }
@@ -377,7 +393,8 @@ export class ProfileService {
     const person = await this.personOf(profile);
     await this.write(profile.id, 'contact', async () => {
       const changes = changedFields(person, { mobile, email: dto.email });
-      if (Object.keys(changes).length) await this.db.person.update({ where: { id: person.id }, data: changes });
+      if (Object.keys(changes).length)
+        await this.db.person.update({ where: { id: person.id }, data: changes });
     });
     return this.get(userId);
   }
@@ -388,7 +405,9 @@ export class ProfileService {
 
   async updateEducation(userId: string, dto: EducationStepDto): Promise<ProfileDto> {
     const profile = await this.profileOf(userId);
-    const person = profile.personId ? await this.db.person.findFirst({ where: { id: profile.personId } }) : null;
+    const person = profile.personId
+      ? await this.db.person.findFirst({ where: { id: profile.personId } })
+      : null;
     const errors = graduationYearRules(dto.graduationYear, iso(person?.birthDate), this.now());
     if (!(await this.db.educationLevel.count({ where: { id: dto.educationLevelId, isActive: true } }))) {
       errors.push(err('educationLevelId', 'LOOKUP_INVALID'));
@@ -434,15 +453,19 @@ export class ProfileService {
     const sectorIds = [...new Set(list.map((p) => p.sectorId).filter((s): s is string => !!s))];
     const validSectors = new Set(
       sectorIds.length
-        ? (await this.db.sector.findMany({ where: { id: { in: sectorIds }, isActive: true }, select: { id: true } })).map(
-            (s) => s.id,
-          )
+        ? (
+            await this.db.sector.findMany({
+              where: { id: { in: sectorIds }, isActive: true },
+              select: { id: true },
+            })
+          ).map((s) => s.id)
         : [],
     );
     list.forEach((p, i) => {
       const r = positionDateRules(p, birthDate, today, prefix(i));
       errors.push(...r.errors);
-      if (p.sectorId && !validSectors.has(p.sectorId)) errors.push(err(`${prefix(i)}sectorId`, 'LOOKUP_INVALID'));
+      if (p.sectorId && !validSectors.has(p.sectorId))
+        errors.push(err(`${prefix(i)}sectorId`, 'LOOKUP_INVALID'));
       dates.push({ start: r.start ?? '', end: r.end });
     });
     throwIf(errors);
@@ -477,7 +500,10 @@ export class ProfileService {
 
   private async birthDateOf(profile: { personId: string | null }): Promise<string | null> {
     if (!profile.personId) return null;
-    const person = await this.db.person.findFirst({ where: { id: profile.personId }, select: { birthDate: true } });
+    const person = await this.db.person.findFirst({
+      where: { id: profile.personId },
+      select: { birthDate: true },
+    });
     return iso(person?.birthDate);
   }
 
@@ -486,9 +512,13 @@ export class ProfileService {
     const profile = await this.profileOf(userId);
     const birthDate = await this.birthDateOf(profile);
     const positions = dto.hasExperience ? dto.positions : undefined;
-    const dates = positions ? await this.validatePositions(positions, birthDate, (i) => `positions.${i}.`) : [];
+    const dates = positions
+      ? await this.validatePositions(positions, birthDate, (i) => `positions.${i}.`)
+      : [];
     const verifier =
-      dto.hasExperience && dto.verifier !== undefined && dto.verifier !== null ? this.verifierData(dto.verifier) : undefined;
+      dto.hasExperience && dto.verifier !== undefined && dto.verifier !== null
+        ? this.verifierData(dto.verifier)
+        : undefined;
 
     await this.write(profile.id, 'experience', async () => {
       const years = dto.hasExperience ? (dto.yearsOfExperience ?? null) : null;
@@ -551,14 +581,18 @@ export class ProfileService {
     }
   }
 
-  private async saveVerifier(seekerId: string, data: ReturnType<ProfileService['verifierData']>): Promise<void> {
+  private async saveVerifier(
+    seekerId: string,
+    data: ReturnType<ProfileService['verifierData']>,
+  ): Promise<void> {
     const current = await this.verifierOf(seekerId);
     if (!current) {
       await this.db.experienceContact.create({ data: { ...data, seekerId } });
       return;
     }
     const changes = changedFields(current, data);
-    if (Object.keys(changes).length) await this.db.experienceContact.update({ where: { id: current.id }, data: changes });
+    if (Object.keys(changes).length)
+      await this.db.experienceContact.update({ where: { id: current.id }, data: changes });
   }
 
   private async experienceProfile(userId: string) {
@@ -623,12 +657,15 @@ export class ProfileService {
     const profile = await this.profileOf(userId);
     const existing = await this.positionsOf(profile.id);
     const same =
-      ids.length === existing.length && new Set(ids).size === ids.length && existing.every((p) => ids.includes(p.id));
+      ids.length === existing.length &&
+      new Set(ids).size === ids.length &&
+      existing.every((p) => ids.includes(p.id));
     if (!same) throw Errors.badRequest('POSITIONS_ORDER_MISMATCH');
     await this.write(profile.id, 'positions', async () => {
       for (const [i, id] of ids.entries()) {
         const p = existing.find((x) => x.id === id)!;
-        if (p.sortOrder !== i) await this.db.experiencePosition.update({ where: { id }, data: { sortOrder: i } });
+        if (p.sortOrder !== i)
+          await this.db.experiencePosition.update({ where: { id }, data: { sortOrder: i } });
       }
     });
     return this.listPositions(userId);
@@ -698,10 +735,18 @@ export function toVerifierDto(v: {
   phone: string | null;
   email: string | null;
 }): VerifierDto {
-  return { id: v.id, name: v.name, jobTitle: v.jobTitle, organization: v.organization, phone: v.phone, email: v.email };
+  return {
+    id: v.id,
+    name: v.name,
+    jobTitle: v.jobTitle,
+    organization: v.organization,
+    phone: v.phone,
+    email: v.email,
+  };
 }
 
-const stringList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+const stringList = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 
 export function toAnalysisDto(a: {
   id: string;

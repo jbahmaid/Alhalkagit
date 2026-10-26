@@ -12,6 +12,8 @@ export class MatchingProcessor extends WorkerHost {
   private readonly logger = new Logger('Matching');
 
   async process(job: Job<ProfileUpdatedJob>): Promise<void> {
-    this.logger.debug(`profile.updated seeker=${job.data.seekerId} reason=${job.data.reason} (no-op until batch 3)`);
+    this.logger.debug(
+      `profile.updated seeker=${job.data.seekerId} reason=${job.data.reason} (no-op until batch 3)`,
+    );
   }
 }

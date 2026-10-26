@@ -149,7 +149,10 @@ export function createFakePrisma() {
       }),
       true,
     ),
-    person: new FakeTable(() => ({ deletedAt: null, darId: null, fakhdhId: null, mobile: null, email: null }), true),
+    person: new FakeTable(
+      () => ({ deletedAt: null, darId: null, fakhdhId: null, mobile: null, email: null }),
+      true,
+    ),
     seekerEducation: new FakeTable(() => ({ deletedAt: null, sortOrder: 0, fieldOfStudy: null }), true),
     experiencePosition: new FakeTable(() => ({ deletedAt: null, organization: null, sectorId: null }), true),
     experienceContact: new FakeTable(() => ({ deletedAt: null, positionId: null }), true),

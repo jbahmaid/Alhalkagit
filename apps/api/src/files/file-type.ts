@@ -29,7 +29,10 @@ export function extensionOf(name: string): string {
 }
 
 /** The detected type must be allowed, and the file name must carry an allowed extension. */
-export function checkCvFile(name: string, buf: Buffer): { ok: true; ext: CvExtension; mime: string } | { ok: false } {
+export function checkCvFile(
+  name: string,
+  buf: Buffer,
+): { ok: true; ext: CvExtension; mime: string } | { ok: false } {
   const ext = extensionOf(name);
   if (!(CV_EXTENSIONS as readonly string[]).includes(ext)) return { ok: false };
   const detected = detectCvType(buf);
