@@ -7,6 +7,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { useTranslations } from 'next-intl';
 import { Icon } from './Icon';
@@ -165,6 +166,34 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           </option>
         ))}
       </select>
+      <FieldMessages hintId={hintId} hint={hint} errorId={errorId} error={error} />
+    </div>
+  );
+});
+
+export type TextAreaFieldProps = Described & TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+/** Multi-line text with the same label, hint and error wiring as TextField. */
+export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(function TextAreaField(
+  { label, hint, error, optional, id, className = '', ...rest },
+  ref,
+) {
+  const auto = useId();
+  const fid = id ?? auto;
+  const { hintId, errorId, describedBy } = useDescribedBy(fid, hint, error);
+  return (
+    <div className="mb-4 flex min-w-0 flex-col gap-1.5">
+      <Label htmlFor={fid} label={label} optional={optional} />
+      <textarea
+        ref={ref}
+        id={fid}
+        aria-describedby={describedBy}
+        aria-invalid={error ? true : undefined}
+        required={!optional}
+        rows={6}
+        className={`${INPUT} min-h-[140px] ${className}`}
+        {...rest}
+      />
       <FieldMessages hintId={hintId} hint={hint} errorId={errorId} error={error} />
     </div>
   );

@@ -4,6 +4,7 @@ export {
   TextField,
   PasswordField,
   SelectField,
+  TextAreaField,
   OtpInput,
   Checkbox,
   ChoiceGroup,
@@ -17,3 +18,4 @@ export { Dialog } from './Dialog';
 export { PageHeader } from './PageHeader';
 export { Icon, Logo } from './Icon';
 export type { IconName } from './Icon';
+export { Kv } from './Kv';
