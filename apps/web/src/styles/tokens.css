@@ -1,0 +1,56 @@
+/* Generated from docs/design/tokens.json by scripts/generate-tokens.mjs. Do not edit by hand. */
+:root {
+  --color-bg: #F6F5F1;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #EFEDE6;
+  --color-border: #D9D6CC;
+  --color-text: #1B2421;
+  --color-text-muted: #56615C;
+  --color-primary: #0E5E58;
+  --color-primary-hover: #0A4A45;
+  --color-primary-soft: #E2F0EE;
+  --color-on-primary: #FFFFFF;
+  --color-accent: #9A6212;
+  --color-accent-soft: #F6ECDC;
+  --color-match: #156A3A;
+  --color-match-soft: #E3F3E8;
+  --color-near: #8A4B00;
+  --color-near-soft: #FBEFD9;
+  --color-danger: #B42318;
+  --color-danger-soft: #FDECEA;
+  --color-info: #1F5C99;
+  --color-info-soft: #E6EFF8;
+  --color-focus: #0B66C3;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 22, 0.06);
+  --shadow-md: 0 4px 16px rgba(16, 24, 22, 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0E1412;
+    --color-surface: #161F1C;
+    --color-surface-2: #1E2926;
+    --color-border: #2D3A36;
+    --color-text: #E6ECE9;
+    --color-text-muted: #A2B0AA;
+    --color-primary: #5CC2B6;
+    --color-primary-hover: #7AD3C8;
+    --color-primary-soft: #15332F;
+    --color-on-primary: #06201D;
+    --color-accent: #E0B062;
+    --color-accent-soft: #33281A;
+    --color-match: #7BD49C;
+    --color-match-soft: #133222;
+    --color-near: #F2B766;
+    --color-near-soft: #3A2A12;
+    --color-danger: #FF8A80;
+    --color-danger-soft: #3A1714;
+    --color-info: #8DBBEE;
+    --color-info-soft: #142638;
+    --color-focus: #7DB3FF;
+    --shadow-sm: none;
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
