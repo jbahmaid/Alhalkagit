@@ -1,4 +1,4 @@
-/* In-memory stand-in for PrismaService, good enough for auth/permission unit tests. */
+/* In-memory stand-in for PrismaService, good enough for unit tests (auth, permissions, profile). */
 import { randomUUID } from 'node:crypto';
 import { loadConfig } from '../config/app-config';
 
@@ -30,22 +30,57 @@ export function matches(row: Row, where: Row = {}): boolean {
 export class FakeTable {
   rows: Row[] = [];
   private seq = 0;
-  constructor(private readonly defaults: () => Row = () => ({})) {}
+  constructor(
+    private readonly defaults: () => Row = () => ({}),
+    /** Mimics the audit extension: reads hide deletedAt rows, delete sets deletedAt. */
+    private readonly softDelete = false,
+  ) {}
 
-  private sorted(where?: Row, orderBy?: Row): Row[] {
-    const list = this.rows.filter((r) => matches(r, where));
-    if (orderBy) {
-      const [[field, dir]] = Object.entries(orderBy);
-      list.sort((a, b) => {
-        const d = +a[field] - +b[field] || a.__seq - b.__seq;
-        return dir === 'desc' ? -d : d;
-      });
-    }
+  private visible(where: Row = {}): Row {
+    return this.softDelete && !Object.prototype.hasOwnProperty.call(where, 'deletedAt')
+      ? { ...where, deletedAt: null }
+      : where;
+  }
+
+  private sorted(where?: Row, orderBy?: Row | Row[]): Row[] {
+    const list = this.rows.filter((r) => matches(r, this.visible(where)));
+    const orders = orderBy ? (Array.isArray(orderBy) ? orderBy : [orderBy]) : [];
+    list.sort((a, b) => {
+      for (const o of orders) {
+        const [[field, dir]] = Object.entries(o);
+        const d = +a[field] - +b[field];
+        if (d) return dir === 'desc' ? -d : d;
+      }
+      return a.__seq - b.__seq;
+    });
     return list;
   }
 
   async findFirst(args: Row = {}) {
     return this.sorted(args.where, args.orderBy)[0] ?? null;
+  }
+  async findFirstOrThrow(args: Row = {}) {
+    const row = await this.findFirst(args);
+    if (!row) throw new Error('No record found');
+    return row;
+  }
+  async count(args: Row = {}) {
+    return this.sorted(args.where).length;
+  }
+  async delete(args: Row) {
+    const row = this.rows.find((r) => matches(r, this.visible(args.where)));
+    if (!row) throw new Error('Record not found');
+    if (this.softDelete) row.deletedAt = new Date();
+    else this.rows.splice(this.rows.indexOf(row), 1);
+    return row;
+  }
+  async deleteMany(args: Row = {}) {
+    const list = this.sorted(args.where);
+    for (const row of list) {
+      if (this.softDelete) row.deletedAt = new Date();
+      else this.rows.splice(this.rows.indexOf(row), 1);
+    }
+    return { count: list.length };
   }
   async findUnique(args: Row) {
     return this.findFirst(args);
@@ -66,13 +101,13 @@ export class FakeTable {
     return row;
   }
   async update(args: Row) {
-    const row = this.rows.find((r) => matches(r, args.where));
+    const row = this.rows.find((r) => matches(r, this.visible(args.where)));
     if (!row) throw new Error('Record not found');
     Object.assign(row, args.data, { updatedAt: new Date() });
     return row;
   }
   async updateMany(args: Row) {
-    const list = this.rows.filter((r) => matches(r, args.where));
+    const list = this.sorted(args.where);
     list.forEach((r) => Object.assign(r, args.data));
     return { count: list.length };
   }
@@ -102,7 +137,39 @@ export function createFakePrisma() {
       deletedAt: null,
       person: null,
     })),
-    seekerProfile: new FakeTable(() => ({ deletedAt: null })),
+    seekerProfile: new FakeTable(
+      () => ({
+        deletedAt: null,
+        personId: null,
+        completionStep: 'PERSONAL',
+        completedAt: null,
+        hasExperience: null,
+        yearsOfExperience: null,
+        currentCvFileId: null,
+      }),
+      true,
+    ),
+    person: new FakeTable(() => ({ deletedAt: null, darId: null, fakhdhId: null, mobile: null, email: null }), true),
+    seekerEducation: new FakeTable(() => ({ deletedAt: null, sortOrder: 0, fieldOfStudy: null }), true),
+    experiencePosition: new FakeTable(() => ({ deletedAt: null, organization: null, sectorId: null }), true),
+    experienceContact: new FakeTable(() => ({ deletedAt: null, positionId: null }), true),
+    uploadedFile: new FakeTable(() => ({ deletedAt: null }), true),
+    cvAnalysis: new FakeTable(() => ({
+      status: 'PENDING',
+      suggestedSectorId: null,
+      correctedSectorId: null,
+      skills: null,
+      inferredYears: null,
+      tipsAr: null,
+      tipsEn: null,
+      completedAt: null,
+      error: null,
+    })),
+    country: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
+    dar: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
+    fakhdh: new FakeTable(() => ({ deletedAt: null, isActive: true, darId: null }), true),
+    sector: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
+    educationLevel: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
     emailVerificationCode: new FakeTable(() => ({ attempts: 0, maxAttempts: 5, consumedAt: null })),
     refreshToken: new FakeTable(() => ({ revokedAt: null, revokeReason: null, replacedById: null })),
     permission: new FakeTable(),
