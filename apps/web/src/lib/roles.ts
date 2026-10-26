@@ -16,7 +16,7 @@ export const ROLE_NAV: Record<'SEEKER' | 'EMPLOYER' | 'ADMIN', NavItem[]> = {
   EMPLOYER: [
     { href: '/employer', labelKey: 'dashboard', enabled: true },
     { href: '/employer/jobs/new', labelKey: 'postJob', enabled: true },
-    { href: '/employer/reports', labelKey: 'reports', enabled: false },
+    { href: '/employer/reports', labelKey: 'reports', enabled: true },
     { href: '/account', labelKey: 'account', enabled: true },
   ],
   ADMIN: [
@@ -25,8 +25,8 @@ export const ROLE_NAV: Record<'SEEKER' | 'EMPLOYER' | 'ADMIN', NavItem[]> = {
     { href: '/admin/lookups', labelKey: 'lookups', enabled: true },
     { href: '/admin/users', labelKey: 'users', enabled: true },
     { href: '/admin/audit', labelKey: 'audit', enabled: true },
+    { href: '/admin/reports', labelKey: 'reports', enabled: true },
     { href: '/admin/settings', labelKey: 'settings', enabled: true },
-    { href: '/admin/reports', labelKey: 'reports', enabled: false },
     { href: '/account', labelKey: 'account', enabled: true },
   ],
 };

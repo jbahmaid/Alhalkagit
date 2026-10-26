@@ -830,5 +830,71 @@
     "password": "Password",
     "passwordLead": "Change it by entering the current password and a new one.",
     "changePassword": "Change password"
+  },
+  "reports": {
+    "title": "Reports",
+    "lead": "Aggregated statistics with no personal data.",
+    "employerLead": "General aggregated reports, plus figures for your own jobs.",
+    "under5": "Any group with fewer than {min} is hidden to protect privacy, and another may be hidden with it so it cannot be worked out from the total.",
+    "hidden": "Hidden (fewer than {min})",
+    "noData": "No data yet.",
+    "unspecified": "Not specified",
+    "filters": "Report filters",
+    "from": "From date",
+    "to": "To date",
+    "sector": "Sector",
+    "allSectors": "All sectors",
+    "country": "Country",
+    "allCountries": "All countries",
+    "apply": "Apply",
+    "clear": "Clear filters",
+    "filtersNote": "Date: when the seeker registered and the job was published. Sector: the seeker's sector of experience and the job's sector. Country: the seeker's nationality and the job's country.",
+    "seekersTitle": "Job seekers",
+    "seekersTotal": "Total job seekers",
+    "withExperience": "With experience",
+    "withoutExperience": "Without experience",
+    "byAge": "By age",
+    "byGender": "By gender",
+    "byEducation": "By education level",
+    "byExperience": "By experience",
+    "bySectorSeekers": "By sector of experience",
+    "bySectorSeekersNote": "A seeker may count in more than one sector.",
+    "byNationality": "By nationality",
+    "jobsTitle": "Jobs",
+    "jobsTotal": "Total jobs",
+    "open": "Open",
+    "unavailable": "No longer available",
+    "hiredViaPlatform": "Hired via the platform",
+    "closedWithoutHiring": "Closed without hiring",
+    "interestRequests": "Interest requests",
+    "bySectorJobs": "Jobs by sector",
+    "byStatus": "Jobs by status",
+    "ownTitle": "My jobs in numbers",
+    "ownEmpty": "You have not posted a job yet.",
+    "jobTitle": "Job",
+    "jobStatus": "Status",
+    "generatedAt": "Prepared {at}",
+    "age": {
+      "UNDER_18": "Under 18",
+      "18_24": "18–24",
+      "25_34": "25–34",
+      "35_44": "35–44",
+      "45_54": "45–54",
+      "55_PLUS": "55+"
+    },
+    "gender": {
+      "MALE": "Men",
+      "FEMALE": "Women"
+    },
+    "experience": {
+      "YES": "With experience",
+      "NO": "Without experience",
+      "UNSPECIFIED": "Not specified yet"
+    },
+    "status": {
+      "OPEN": "Open",
+      "HIRED_VIA_PLATFORM": "Hired via the platform",
+      "CLOSED_WITHOUT_HIRING": "Closed without hiring"
+    }
   }
 }
