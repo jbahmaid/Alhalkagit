@@ -163,6 +163,48 @@ describe('ProfileService: affiliation, contact, education', () => {
   });
 });
 
+describe('ProfileService: lookup items deactivated later (S-19)', () => {
+  it('keeps a stored value that was deactivated, but refuses to pick a new inactive one', async () => {
+    const c = await setup();
+    await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
+    await c.profiles.updateAffiliation(c.user.id, { darId: c.dar.id, fakhdhId: c.fakhdh.id });
+    const edu = {
+      educationLevelId: c.level.id,
+      graduationYear: 2018,
+      institution: 'KSU',
+      countryId: c.sa.id,
+    };
+    await c.profiles.updateEducation(c.user.id, edu);
+    const sector = await c.db.sector.create({ data: { code: 'IT', nameAr: 'ت', nameEn: 'IT' } });
+    const pos = { title: 'Dev', sectorId: sector.id, startDate: '2019-01-01', endDate: null };
+    await c.profiles.updateExperience(c.user.id, {
+      hasExperience: true,
+      yearsOfExperience: 5,
+      positions: [pos],
+    });
+
+    for (const t of [c.db.country, c.db.dar, c.db.fakhdh, c.db.educationLevel, c.db.sector]) {
+      t.rows.forEach((r: any) => (r.isActive = false));
+    }
+    expect(await code(c.profiles.updatePersonal(c.user.id, personal(c.sa.id, null)))).toBe('OK');
+    expect(
+      await code(c.profiles.updateAffiliation(c.user.id, { darId: c.dar.id, fakhdhId: c.fakhdh.id })),
+    ).toBe('OK');
+    expect(await code(c.profiles.updateEducation(c.user.id, { ...edu, institution: 'KAU' }))).toBe('OK');
+    const positions = [{ ...pos, title: 'Senior Dev' }];
+    expect(
+      await code(
+        c.profiles.updateExperience(c.user.id, { hasExperience: true, yearsOfExperience: 6, positions }),
+      ),
+    ).toBe('OK');
+
+    const other = await c.db.dar.create({ data: { code: 'D9', nameAr: 'x', nameEn: 'x', isActive: false } });
+    expect(await code(c.profiles.updateAffiliation(c.user.id, { darId: other.id }))).toBe(
+      'VALIDATION_FAILED:darId=LOOKUP_INVALID',
+    );
+  });
+});
+
 describe('ProfileService: experience and positions (unlimited)', () => {
   const pos = (title: string, startDate: string, endDate: string | null = null) => ({
     title,

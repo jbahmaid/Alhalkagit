@@ -10,7 +10,7 @@ export class LookupsController {
   /** GET /api/lookups/:type: countries | sectors | education-levels | dars | fakhdhs | business-types */
   @Public()
   @Get(':type')
-  @Header('Cache-Control', 'public, max-age=60')
+  @Header('Cache-Control', 'no-cache') // admin edits (S-19) must show up in forms right away
   list(@Param('type') type: string): Promise<LookupItemDto[]> {
     return this.lookups.list(type);
   }
