@@ -53,3 +53,8 @@ export function formatDateTime(value: string | null | undefined, locale: string)
     hourCycle: 'h23',
   }).format(d);
 }
+
+/** 1248 -> "1,248" (Latin digits in both languages). */
+export function formatNumber(n: number, locale: string): string {
+  return new Intl.NumberFormat(intlLocale(locale)).format(n);
+}

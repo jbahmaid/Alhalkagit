@@ -17,6 +17,7 @@ import { checkMatchingSettings } from './admin-settings.service';
 import { AdminUsersService, temporaryPassword } from './admin-users.service';
 import { AdminExportController } from './admin.controllers';
 import { ExportService } from './export/export.service';
+import { ReportsService } from '../reports/reports.service';
 import { writeWorkbook } from './export/workbook';
 
 async function failure(
@@ -60,7 +61,8 @@ async function setup() {
     config,
   );
   const auditLog = new AdminAuditService(prisma as any);
-  const exports = new ExportService(prisma as any, audit as any, crypto, users, auditLog);
+  const reports = new ReportsService(prisma as any);
+  const exports = new ExportService(prisma as any, audit as any, crypto, users, auditLog, reports);
   const exportController = new AdminExportController(users, tokens, exports);
   const account = new AccountService(prisma as any, passwords, otp, email as any);
 

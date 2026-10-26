@@ -98,6 +98,14 @@ export class AuditFiltersDto {
   @IsOptional() @Transform(emptyToUndefined) @Matches(/^\d{4}-\d{2}-\d{2}$/) to?: string;
 }
 
+/** S-22 admin filters (also sent with the reports export). Dates are inclusive Riyadh days. */
+export class ReportFiltersDto {
+  @IsOptional() @Transform(emptyToUndefined) @Matches(/^\d{4}-\d{2}-\d{2}$/) from?: string;
+  @IsOptional() @Transform(emptyToUndefined) @Matches(/^\d{4}-\d{2}-\d{2}$/) to?: string;
+  @IsOptional() @Transform(emptyToUndefined) @IsUUID() sectorId?: string;
+  @IsOptional() @Transform(emptyToUndefined) @IsUUID() countryId?: string;
+}
+
 export class AuditQueryDto extends AuditFiltersDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100000) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
@@ -162,6 +170,7 @@ export class ExportRequestDto {
   @IsOptional() @IsIn(['ar', 'en']) locale?: 'ar' | 'en';
   @IsOptional() @ValidateNested() @Type(() => UserFiltersDto) users?: UserFiltersDto;
   @IsOptional() @ValidateNested() @Type(() => AuditFiltersDto) audit?: AuditFiltersDto;
+  @IsOptional() @ValidateNested() @Type(() => ReportFiltersDto) reports?: ReportFiltersDto;
 }
 
 export const isExportKind = (k: string): k is ExportKind => (EXPORT_KINDS as readonly string[]).includes(k);

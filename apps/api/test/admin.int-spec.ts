@@ -20,6 +20,7 @@ import { AdminLookupsService } from '../src/admin/admin-lookups.service';
 import { AdminSettingsService } from '../src/admin/admin-settings.service';
 import { AdminUsersService } from '../src/admin/admin-users.service';
 import { ExportService } from '../src/admin/export/export.service';
+import { ReportsService } from '../src/reports/reports.service';
 import { AuditModule } from '../src/audit/audit.module';
 import { AuditService } from '../src/audit/audit.service';
 import { PasswordService } from '../src/auth/password.service';
@@ -130,7 +131,7 @@ beforeAll(async () => {
   );
   auditLog = new AdminAuditService(prisma);
   settings = new AdminSettingsService(prisma, new MatchingService(prisma), matchingEvents as any);
-  exporter = new ExportService(prisma, audit, crypto, users, auditLog);
+  exporter = new ExportService(prisma, audit, crypto, users, auditLog, new ReportsService(prisma));
   profiles = new ProfileService(prisma, crypto, profileEvents as any, config);
   raw = new PrismaClient({ datasources: { db: { url: DB_URL } } });
 

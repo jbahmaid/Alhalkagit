@@ -1,14 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { AuditAction, Prisma, UserRole } from '@prisma/client';
-import { EXPORT_AUDIT_LIMIT, localSaudiMobile, type ExportKind } from '@sanad/shared';
+import {
+  EXPORT_AUDIT_LIMIT,
+  localSaudiMobile,
+  type ExportKind,
+  type ReportRow,
+  type ReportsDto,
+} from '@sanad/shared';
 import type { Writable } from 'node:stream';
 import { AuditService } from '../../audit/audit.service';
 import { CryptoService } from '../../crypto/crypto.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ReportsService } from '../../reports/reports.service';
 import { completionOf } from '../../seekers/profile-completion';
 import { AdminAuditService } from '../admin-audit.service';
 import { AdminUsersService } from '../admin-users.service';
-import { AuditFiltersDto, UserFiltersDto } from '../dto/admin.dto';
+import { AuditFiltersDto, ReportFiltersDto, UserFiltersDto } from '../dto/admin.dto';
 import { chunked, EXPORT_DICT, ExportDict, ExportLocale, SheetSpec, writeWorkbook } from './workbook';
 
 type Named = { nameAr: string; nameEn: string };
@@ -20,6 +27,14 @@ export interface ExportRequest {
   locale: ExportLocale;
   users?: UserFiltersDto;
   audit?: AuditFiltersDto;
+  reports?: ReportFiltersDto;
+}
+
+/** One line of a report sheet: the report, the category and its (possibly hidden) count. */
+interface ReportLine {
+  report: string;
+  category: string;
+  count: number | string;
 }
 
 /** What one export contains: its sheets and the filters behind them (for the audit row). */
@@ -48,6 +63,7 @@ export class ExportService {
     private readonly crypto: CryptoService,
     private readonly users: AdminUsersService,
     private readonly auditLog: AdminAuditService,
+    private readonly reports: ReportsService,
   ) {}
 
   private get db() {
@@ -67,6 +83,11 @@ export class ExportService {
         return { sheets: [await this.usersSheet(t, req.users ?? {})], filters: { users: clean(req.users) } };
       case 'audit':
         return { sheets: [await this.auditSheet(t, req.audit ?? {})], filters: { audit: clean(req.audit) } };
+      case 'reports': {
+        const filters = clean(req.reports);
+        const data = await this.reports.report('all', filters);
+        return { sheets: this.reportSheets(t, req.locale, data, nm), filters: { reports: filters } };
+      }
       case 'full':
         return {
           sheets: [
@@ -516,5 +537,94 @@ export class ExportService {
       ],
     };
     return sheet;
+  }
+
+  /**
+   * S-22 in Excel: the same aggregates and the same suppression as the screen (a hidden group
+   * is written as "hidden (fewer than 5)"), plus the filters and the time it was made.
+   */
+  private reportSheets(
+    t: ExportDict,
+    locale: ExportLocale,
+    r: ReportsDto,
+    nm: (id: string | null | undefined) => string | null,
+  ): SheetSpec[] {
+    const tr = t.reports;
+    const hidden = tr.hidden.replace('{min}', String(r.minGroupSize));
+    const count = (n: number | null): number | string => (n === null ? hidden : n);
+    const named = (row: ReportRow) => (locale === 'ar' ? row.nameAr : row.nameEn) ?? tr.unspecified;
+    const lines = (report: string, rows: ReportRow[], label: (row: ReportRow) => string): ReportLine[] =>
+      rows.map((row) => ({ report, category: label(row), count: count(row.count) }));
+    const one = (report: string, n: number | null): ReportLine => ({
+      report,
+      category: tr.all,
+      count: count(n),
+    });
+    const s = tr.sections;
+    const ageLabel = (row: ReportRow) => tr.ageBands[row.key as keyof typeof tr.ageBands] ?? row.key;
+    const seekers: ReportLine[] = [
+      one(s.seekersTotal, r.seekers.total),
+      one(s.withExperience, r.seekers.withExperience),
+      one(s.withoutExperience, r.seekers.withoutExperience),
+      ...lines(s.byAge, r.seekers.byAge, ageLabel),
+      ...lines(s.byGender, r.seekers.byGender, (x) => t.enums.gender[x.key as 'MALE' | 'FEMALE'] ?? x.key),
+      ...lines(s.byEducation, r.seekers.byEducation, named),
+      ...lines(
+        s.byExperience,
+        r.seekers.byExperience,
+        (x) => tr.experience[x.key as keyof typeof tr.experience] ?? x.key,
+      ),
+      ...lines(s.bySector, r.seekers.bySector, named),
+      ...lines(s.byNationality, r.seekers.byNationality, named),
+    ];
+    const jobs: ReportLine[] = [
+      one(s.jobsTotal, r.jobs.total),
+      one(s.open, r.jobs.open),
+      one(s.unavailable, r.jobs.unavailable),
+      one(s.hiredViaPlatform, r.jobs.hiredViaPlatform),
+      one(s.closedWithoutHiring, r.jobs.closedWithoutHiring),
+      one(s.interestRequests, r.jobs.interestRequests),
+      ...lines(s.jobsBySector, r.jobs.bySector, named),
+      ...lines(s.jobsByStatus, r.jobs.byStatus, (x) => tr.status[x.key as keyof typeof tr.status] ?? x.key),
+    ];
+    const i = tr.info;
+    const info: { item: string; value: string | number | Date }[] = [
+      { item: i.generatedAt, value: new Date(r.generatedAt) },
+      { item: i.minGroupSize, value: r.minGroupSize },
+      { item: i.from, value: r.filters.from ?? tr.all },
+      { item: i.to, value: r.filters.to ?? tr.all },
+      { item: i.sector, value: nm(r.filters.sectorId) ?? tr.all },
+      { item: i.country, value: nm(r.filters.countryId) ?? tr.all },
+      { item: i.note, value: '' },
+    ];
+    const once = <T>(rows: T[]) =>
+      async function* () {
+        yield rows;
+      };
+    const reportCols = [
+      { key: 'report' as const, width: 30, value: (x: ReportLine) => x.report },
+      { key: 'category' as const, width: 34, value: (x: ReportLine) => x.category },
+      { key: 'count' as const, type: 'count' as const, value: (x: ReportLine) => x.count },
+    ];
+    return [
+      { key: 'reportSeekers', columns: reportCols, rows: once(seekers) },
+      { key: 'reportJobs', columns: reportCols, rows: once(jobs) },
+      {
+        key: 'reportInfo',
+        rows: once(info),
+        columns: [
+          { key: 'item', width: 34, value: (x: (typeof info)[number]) => x.item },
+          {
+            key: 'value',
+            width: 30,
+            type: 'count',
+            value: (x: (typeof info)[number]) =>
+              x.value instanceof Date
+                ? x.value.toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' })
+                : x.value,
+          },
+        ],
+      },
+    ];
   }
 }

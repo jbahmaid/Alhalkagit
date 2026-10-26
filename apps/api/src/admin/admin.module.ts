@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { MatchingModule } from '../matching/matching.module';
+import { ReportsModule } from '../reports/reports.module';
 import { SeekersModule } from '../seekers/seekers.module';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminDashboardService } from './admin-dashboard.service';
@@ -20,7 +21,7 @@ import { ExportService } from './export/export.service';
 
 /** Admin area (FR-2.4.1 to FR-2.4.3) and Excel export (FR-2.5.4). Approvals live in JobsModule. */
 @Module({
-  imports: [AuthModule, SeekersModule, MatchingModule],
+  imports: [AuthModule, SeekersModule, MatchingModule, ReportsModule],
   controllers: [
     AdminDashboardController,
     AdminLookupsController,

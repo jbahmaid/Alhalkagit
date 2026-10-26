@@ -43,6 +43,7 @@ x-api-env: &api-env
   S3_SECRET_KEY: ${S3_SECRET_KEY:-sanad-local-only}
   S3_REGION: ${S3_REGION:-us-east-1}
   THROTTLE_ENABLED: ${THROTTLE_ENABLED:-true}
+  THROTTLE_FACTOR: ${THROTTLE_FACTOR:-1}
   LOG_LEVEL: ${LOG_LEVEL:-log}
 
 services:
@@ -133,6 +134,8 @@ services:
       ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
       SEED_ON_START: ${SEED_ON_START:-true}
       SEED_SAMPLE_TRIBE_DATA: ${SEED_SAMPLE_TRIBE_DATA:-true}
+      # Demo data for presentations (demo-only accounts, shared password; see README)
+      SEED_DEMO: ${SEED_DEMO:-false}
     volumes:
       - secrets:/app/secrets
     depends_on:
@@ -195,6 +198,8 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: '3000'
       API_INTERNAL_URL: http://api:4000
+      # Only behind your own reverse proxy: trust the X-Forwarded-For it sets (see .env.example).
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
     ports:
       - '${WEB_PORT:-3000}:3000'
     depends_on:

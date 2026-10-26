@@ -146,7 +146,12 @@ export class CvService implements OnModuleInit {
       orderBy: { createdAt: 'desc' },
     });
     if (!analysis || analysis.status !== 'COMPLETED') throw Errors.conflict('CV_ANALYSIS_NOT_READY');
-    if (sectorId && !(await this.db.sector.count({ where: { id: sectorId, isActive: true } }))) {
+    // A sector deactivated since may stay: the one already chosen, or the suggested one.
+    const kept = sectorId === analysis.correctedSectorId || sectorId === analysis.suggestedSectorId;
+    if (
+      sectorId &&
+      !(await this.db.sector.count({ where: { id: sectorId, ...(kept ? {} : { isActive: true }) } }))
+    ) {
       throw Errors.validation([{ field: 'sectorId', errors: ['LOOKUP_INVALID'] }]);
     }
     const updated = await this.profiles.write(profile.id, 'cv-analysis', () =>

@@ -14,8 +14,9 @@ export type SheetKey = keyof ExportDict['sheets'];
  * text: stored as text (numFmt "@"), so phone and ID numbers keep their leading zeros.
  * date / datetime: real Excel dates. datetime is shown in Saudi time (UTC+3, no DST).
  * percent: 0..100 shown as a percentage.
+ * count: a number, or a text note in its place (a report group hidden for privacy).
  */
-export type ColumnType = 'text' | 'number' | 'date' | 'datetime' | 'percent';
+export type ColumnType = 'text' | 'number' | 'date' | 'datetime' | 'percent' | 'count';
 
 export interface ColumnSpec<T> {
   key: ColumnKey;
@@ -41,6 +42,7 @@ const NUM_FMT: Record<ColumnType, string | undefined> = {
   date: 'yyyy-mm-dd',
   datetime: 'yyyy-mm-dd hh:mm',
   percent: '0%',
+  count: undefined,
 };
 
 const DEFAULT_WIDTH: Record<ColumnType, number> = {
@@ -49,6 +51,7 @@ const DEFAULT_WIDTH: Record<ColumnType, number> = {
   date: 13,
   datetime: 18,
   percent: 12,
+  count: 18,
 };
 
 function cellValue(type: ColumnType, v: string | number | Date | null | undefined): ExcelJS.CellValue {
@@ -67,6 +70,8 @@ function cellValue(type: ColumnType, v: string | number | Date | null | undefine
     }
     case 'percent':
       return Number(v) / 100;
+    case 'count':
+      return typeof v === 'number' ? v : String(v);
     default:
       return typeof v === 'number' ? v : Number(v);
   }

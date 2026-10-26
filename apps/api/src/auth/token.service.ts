@@ -125,6 +125,14 @@ export class TokenService {
     return this.prisma.db.refreshToken.findUnique({ where: { tokenHash: this.hashRefresh(token) } });
   }
 
+  /** True while the session family still has a usable token (not ended by logout etc.). */
+  async familyActive(familyId: string): Promise<boolean> {
+    const n = await this.prisma.db.refreshToken.count({
+      where: { familyId, revokedAt: null, expiresAt: { gt: new Date() } },
+    });
+    return n > 0;
+  }
+
   async revokeFamily(familyId: string, reason: string): Promise<void> {
     await this.prisma.db.refreshToken.updateMany({
       where: { familyId, revokedAt: null },

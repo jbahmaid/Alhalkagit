@@ -6,7 +6,10 @@
     "interests": "Interest requests",
     "hires": "Hires",
     "users": "Users",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "reportSeekers": "Seekers report",
+    "reportJobs": "Jobs report",
+    "reportInfo": "Report details"
   },
   "cols": {
     "name": "Name",
@@ -81,7 +84,12 @@
     "entityId": "Record ID",
     "ip": "IP address",
     "before": "Before",
-    "after": "After"
+    "after": "After",
+    "report": "Report",
+    "category": "Category",
+    "count": "Count",
+    "item": "Item",
+    "value": "Value"
   },
   "values": {
     "yes": "Yes",
@@ -101,8 +109,14 @@
       "SUSPENDED": "Suspended",
       "DISABLED": "Disabled"
     },
-    "idType": { "NATIONAL_ID": "National ID", "PASSPORT": "Passport" },
-    "gender": { "MALE": "Male", "FEMALE": "Female" },
+    "idType": {
+      "NATIONAL_ID": "National ID",
+      "PASSPORT": "Passport"
+    },
+    "gender": {
+      "MALE": "Male",
+      "FEMALE": "Female"
+    },
     "approval": {
       "PENDING": "Pending approval",
       "APPROVED": "Approved",
@@ -117,7 +131,10 @@
       "INTERNSHIP": "Internship",
       "FREELANCE": "Freelance"
     },
-    "jobStatus": { "OPEN": "Open", "UNAVAILABLE": "Unavailable" },
+    "jobStatus": {
+      "OPEN": "Open",
+      "UNAVAILABLE": "Unavailable"
+    },
     "outcome": {
       "HIRED_VIA_PLATFORM": "Hired via the platform",
       "CLOSED_WITHOUT_HIRING": "Closed without hiring"
@@ -129,6 +146,57 @@
       "HIRED": "Hired",
       "NOT_SELECTED": "Not selected",
       "WITHDRAWN": "Withdrawn"
+    }
+  },
+  "reports": {
+    "hidden": "Hidden (fewer than {min})",
+    "all": "All",
+    "unspecified": "Not specified",
+    "sections": {
+      "seekersTotal": "Total job seekers",
+      "withExperience": "With experience",
+      "withoutExperience": "Without experience",
+      "byAge": "By age",
+      "byGender": "By gender",
+      "byEducation": "By education level",
+      "byExperience": "By experience",
+      "bySector": "By sector of experience",
+      "byNationality": "By nationality",
+      "jobsTotal": "Total jobs",
+      "open": "Open",
+      "unavailable": "No longer available",
+      "hiredViaPlatform": "Hired via the platform",
+      "closedWithoutHiring": "Closed without hiring",
+      "interestRequests": "Interest requests",
+      "jobsBySector": "Jobs by sector",
+      "jobsByStatus": "Jobs by status"
+    },
+    "ageBands": {
+      "UNDER_18": "Under 18",
+      "18_24": "18–24",
+      "25_34": "25–34",
+      "35_44": "35–44",
+      "45_54": "45–54",
+      "55_PLUS": "55+"
+    },
+    "experience": {
+      "YES": "With experience",
+      "NO": "Without experience",
+      "UNSPECIFIED": "Not specified yet"
+    },
+    "status": {
+      "OPEN": "Open",
+      "HIRED_VIA_PLATFORM": "Hired via the platform",
+      "CLOSED_WITHOUT_HIRING": "Closed without hiring"
+    },
+    "info": {
+      "generatedAt": "Generated at",
+      "minGroupSize": "Minimum group size shown",
+      "from": "From date",
+      "to": "To date",
+      "sector": "Sector",
+      "country": "Country",
+      "note": "Groups under the minimum are hidden to protect privacy."
     }
   }
 }

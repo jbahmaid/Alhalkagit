@@ -417,6 +417,16 @@ describe('CvService', () => {
       sectorId: sector.id,
       suggestedSectorId: 'x',
     });
+    // Deactivated since: the stored (corrected or suggested) sector may stay, another may not.
+    sector.isActive = false;
+    const kept = await c.cv.correctSector(c.user.id, sector.id);
+    expect(kept.correctedSectorId).toBe(sector.id);
+    const old = await c.db.sector.create({ data: { code: 'OLD', isActive: false } });
+    expect(await code(c.cv.correctSector(c.user.id, old.id))).toBe(
+      'VALIDATION_FAILED:sectorId=LOOKUP_INVALID',
+    );
+    c.db.cvAnalysis.rows[0].suggestedSectorId = old.id;
+    expect((await c.cv.correctSector(c.user.id, old.id)).correctedSectorId).toBe(old.id);
   });
 
   it('removes the stored object when the database write fails', async () => {

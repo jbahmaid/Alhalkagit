@@ -243,17 +243,42 @@ describe('AuthService: refresh token rotation', () => {
     expect(old.tokenHash).not.toContain(first.refreshToken);
   });
 
-  it('treats a just-rotated token as a race, and older reuse as theft (revokes the family)', async () => {
+  it('accepts a just-rotated token within the grace period (lost cookie, parallel tabs)', async () => {
+    const ctx = setup();
+    const first = await activeSeeker(ctx);
+    const a = await ctx.auth.refresh(first.refreshToken, meta);
+    // The response with the new cookie never arrived: the browser sends the old one again.
+    const b = await ctx.auth.refresh(first.refreshToken, meta);
+    expect(b.result.authenticated).toBe(true);
+    const rows = ctx.prisma.db.refreshToken.rows;
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows.map((r) => r.familyId)).size).toBe(1);
+    // Both new tokens are valid: either tab can go on with the cookie it got.
+    expect(rows.filter((r) => !r.revokedAt)).toHaveLength(2);
+    expect((await ctx.auth.refresh((a as any).issued.refreshToken, meta)).result.authenticated).toBe(true);
+    expect((await ctx.auth.refresh((b as any).issued.refreshToken, meta)).result.authenticated).toBe(true);
+    // The old record keeps its rotation time: the grace period does not extend.
+    expect(rows[0].revokeReason).toBe('ROTATED');
+  });
+
+  it('reuse after the grace period is theft: the whole family is revoked', async () => {
     const ctx = setup();
     const first = await activeSeeker(ctx);
     await ctx.auth.refresh(first.refreshToken, meta);
-    const race = await ctx.auth.refresh(first.refreshToken, meta);
-    expect(race.result).toEqual({ authenticated: false, code: 'AUTH_REFRESH_RACE' });
-
     ctx.prisma.db.refreshToken.rows[0].revokedAt = new Date(Date.now() - REFRESH_RACE_GRACE_MS - 1000);
     const reuse = await ctx.auth.refresh(first.refreshToken, meta);
     expect(reuse.result).toEqual({ authenticated: false, code: 'AUTH_REFRESH_REUSED' });
     expect(ctx.prisma.db.refreshToken.rows.every((r) => r.revokedAt)).toBe(true);
+  });
+
+  it('the grace period never revives a session that has ended (logout after rotation)', async () => {
+    const ctx = setup();
+    const first = await activeSeeker(ctx);
+    const a = await ctx.auth.refresh(first.refreshToken, meta);
+    await ctx.auth.logout((a as any).issued.refreshToken, meta);
+    const again = await ctx.auth.refresh(first.refreshToken, meta);
+    expect(again.result).toEqual({ authenticated: false, code: 'AUTH_REFRESH_INVALID' });
+    expect(ctx.prisma.db.refreshToken.rows).toHaveLength(2);
   });
 
   it('logout revokes the session and is audited', async () => {

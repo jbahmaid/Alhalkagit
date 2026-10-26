@@ -23,7 +23,8 @@ export interface AppConfig {
     fallback: boolean;
   };
   s3: { endpoint: string; bucket: string; accessKey: string; secretKey: string; region: string };
-  throttle: { enabled: boolean };
+  /** factor: every rate limit is multiplied by it (THROTTLE_FACTOR, 1-100, default 1). */
+  throttle: { enabled: boolean; factor: number };
   logLevel: string;
 }
 
@@ -126,7 +127,10 @@ export function loadConfig(
       secretKey: env.S3_SECRET_KEY || 'sanad-local-only',
       region: env.S3_REGION || 'us-east-1',
     },
-    throttle: { enabled: bool(env.THROTTLE_ENABLED, true) },
+    throttle: {
+      enabled: bool(env.THROTTLE_ENABLED, true),
+      factor: Math.min(int('THROTTLE_FACTOR', env.THROTTLE_FACTOR, 1, errors), 100),
+    },
     logLevel: env.LOG_LEVEL || 'log',
   };
 
