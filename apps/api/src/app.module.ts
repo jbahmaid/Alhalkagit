@@ -17,6 +17,7 @@ import { HealthController } from './health/health.controller';
 import { LookupsModule } from './lookups/lookups.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { JobsModule } from './jobs/jobs.module';
 import { SeekersModule } from './seekers/seekers.module';
 
 @Module({
@@ -49,6 +50,7 @@ import { SeekersModule } from './seekers/seekers.module';
     LookupsModule,
     FilesModule,
     SeekersModule,
+    JobsModule,
   ],
   controllers: [HealthController],
   providers: [

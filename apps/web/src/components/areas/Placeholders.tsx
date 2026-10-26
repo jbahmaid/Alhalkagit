@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/use-auth';
 import { Badge, EmptyState, PageHeader } from '@/components/ui';
 import { ProfileCompletionCard } from '@/components/profile/ProfileCompletionCard';
 
-/** Role landing pages. The seeker one shows profile completion; S-07, S-12 and S-17 come later. */
+/** Role landing pages. The seeker one shows profile completion; S-17 (admin) comes in batch 4. */
 export function SeekerHome() {
   const t = useTranslations();
   const { user } = useAuth();
@@ -17,16 +17,6 @@ export function SeekerHome() {
         lead={user ? t('seeker.welcome', { name: user.displayName }) : undefined}
       />
       <ProfileCompletionCard />
-    </>
-  );
-}
-
-export function EmployerHome() {
-  const t = useTranslations();
-  return (
-    <>
-      <PageHeader eyebrow={t('common.roleEmployer')} title={t('employer.title')} />
-      <EmptyState icon="brief" title={t('employer.placeholderTitle')} body={t('employer.placeholderBody')} />
     </>
   );
 }

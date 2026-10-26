@@ -12,6 +12,7 @@ import {
   EmailDto,
   LoginDto,
   ResetPasswordDto,
+  SignupEmployerDto,
   SignupSeekerDto,
   UpdateMeDto,
   VerifyEmailDto,
@@ -47,6 +48,13 @@ export class AuthController {
   @Post('signup/seeker')
   signupSeeker(@Body() dto: SignupSeekerDto): Promise<PendingVerificationDto> {
     return this.auth.signupSeeker(dto);
+  }
+
+  @Public()
+  @Throttle(EMAIL_SENDING)
+  @Post('signup/employer')
+  signupEmployer(@Body() dto: SignupEmployerDto): Promise<PendingVerificationDto> {
+    return this.auth.signupEmployer(dto);
   }
 
   @Public()

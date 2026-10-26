@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { useApiErrors } from '@/lib/errors';
 import { formatBytes, formatDate, formatMonth } from '@/lib/format';
 import { useLookupName, type Lookups } from '@/lib/lookups';
-import { Alert, Badge, Button, ButtonLink, Card, Icon, PageHeader } from '@/components/ui';
+import { Alert, Badge, Button, ButtonLink, Card, Icon, Kv, PageHeader } from '@/components/ui';
 import { stepHref } from './ProfileWizard';
 
 const byId = (list: LookupItemDto[] | undefined, id: string | null | undefined) =>
@@ -125,6 +125,12 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                       {pos.organization && (
                         <span className="font-normal text-text-muted"> · {pos.organization}</span>
                       )}
+                      {pos.sectorId && (
+                        <span className="font-normal text-text-muted">
+                          {' '}
+                          · {name(byId(lists.sectors, pos.sectorId))}
+                        </span>
+                      )}
                     </p>
                     <p className="m-0 text-sm text-text-muted">
                       {formatMonth(pos.startDate, locale)} –{' '}
@@ -133,11 +139,11 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                   </li>
                 ))}
               </ol>
-              {ex.verifier && (
-                <Kv
-                  rows={[
-                    [
-                      t('verifier'),
+              <Kv
+                rows={[
+                  [
+                    t('verifier'),
+                    ex.verifier ? (
                       <>
                         {ex.verifier.name}
                         {[ex.verifier.phone, ex.verifier.email].filter(Boolean).map((v) => (
@@ -145,11 +151,13 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                             {v && v.startsWith('+966') ? localSaudiMobile(v) : v}
                           </span>
                         ))}
-                      </>,
-                    ],
-                  ]}
-                />
-              )}
+                      </>
+                    ) : (
+                      none
+                    ),
+                  ],
+                ]}
+              />
             </>
           ) : ex.hasExperience === false ? (
             <p className="m-0">{t('noExperience')}</p>
@@ -202,18 +210,5 @@ function Section({ step, n, children }: { step: WizardStep; n: number; children:
       </div>
       {children}
     </Card>
-  );
-}
-
-function Kv({ rows }: { rows: [ReactNode, ReactNode][] }) {
-  return (
-    <dl className="m-0 grid grid-cols-[minmax(110px,40%)_1fr] gap-x-3 gap-y-2 text-[15px]">
-      {rows.map(([k, v], i) => (
-        <div key={i} className="contents">
-          <dt className="text-text-muted">{k}</dt>
-          <dd className="m-0 min-w-0 font-medium [overflow-wrap:anywhere]">{v}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }

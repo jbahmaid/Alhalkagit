@@ -3,7 +3,7 @@ export const QUEUES = {
   email: 'email',
   /** { analysisId } -> extract CV text, call the analyzer, store the result. */
   cvAnalysis: 'cv-analysis',
-  /** { seekerId, reason } -> recompute the seeker's match scores (batch 3). */
+  /** profile.updated { seekerId } / job.updated { jobId } -> recompute match_scores. */
   matching: 'matching',
 } as const;
 
@@ -31,3 +31,14 @@ export interface ProfileUpdatedJob {
   reason: ProfileChangeReason;
   at: string;
 }
+
+/** Job name on the matching queue for a created or edited job. */
+export const JOB_UPDATED_JOB = 'job.updated';
+
+export interface JobUpdatedJob {
+  jobId: string;
+  at: string;
+}
+
+/** Wait before recomputing, so a burst of edits is computed once (same job id while waiting). */
+export const MATCHING_DEBOUNCE_MS = 3000;

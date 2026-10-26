@@ -13,5 +13,25 @@
     "subject": "Your Sanad password reset code",
     "heading": "Reset your password",
     "intro": "You asked to reset your password. Enter the code below, then choose a new password."
-  }
+  },
+  "employerApproved": {
+    "subject": "Your Sanad account is approved",
+    "heading": "Hello {name}, your account is approved",
+    "intro": "A platform admin reviewed your details and approved your account. You can post jobs now.",
+    "button": "Open your dashboard"
+  },
+  "employerRejected": {
+    "subject": "About your Sanad account request",
+    "heading": "Hello {name}",
+    "intro": "A platform admin reviewed your request and the account was not approved.",
+    "reasonLabel": "Reason",
+    "contact": "If you have a question, contact the platform admins."
+  },
+  "newInterest": {
+    "subject": "New interest in your job: {jobTitle}",
+    "heading": "New interest request",
+    "intro": "A job seeker expressed interest in your job \"{jobTitle}\" and agreed to share their profile with you.",
+    "button": "View applicants"
+  },
+  "noticeFooter": "You received this email because you have an account on Sanad."
 }

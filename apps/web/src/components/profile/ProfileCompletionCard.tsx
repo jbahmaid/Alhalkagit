@@ -38,9 +38,12 @@ export function ProfileCompletionCard() {
         <span className="block h-full rounded-pill bg-primary" style={{ width: `${percent}%` }} />
       </div>
       <p className="mb-4 mt-0 text-text-muted">{done ? t('completeBody') : t('incompleteBody')}</p>
-      <ButtonLink href={PROFILE_PATH} variant={done ? 'secondary' : 'primary'}>
-        {done ? t('view') : profile.personal ? t('continue') : t('start')}
-      </ButtonLink>
+      <div className="flex flex-wrap gap-2">
+        {done && <ButtonLink href="/seeker/jobs">{t('browse')}</ButtonLink>}
+        <ButtonLink href={PROFILE_PATH} variant={done ? 'secondary' : 'primary'}>
+          {done ? t('view') : profile.personal ? t('continue') : t('start')}
+        </ButtonLink>
+      </div>
     </Card>
   );
 }

@@ -1,12 +1,18 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { PROFILE_UPDATED_JOB, ProfileChangeReason, ProfileUpdatedJob, QUEUES } from '../common/queues';
+import {
+  MATCHING_DEBOUNCE_MS,
+  PROFILE_UPDATED_JOB,
+  ProfileChangeReason,
+  ProfileUpdatedJob,
+  QUEUES,
+} from '../common/queues';
 
 /**
  * Hook for "this seeker's match scores are stale" (architecture section 6). Every profile or CV
- * change calls `changed()`. Batch 3 adds the real recomputation in the worker's matching
- * processor; until then the job is consumed as a no-op.
+ * change calls `changed()`; the worker's MatchingProcessor recomputes the seeker against every
+ * open job.
  *
  * Changes within a few seconds are coalesced into one job per seeker (same job id while waiting).
  */
@@ -23,7 +29,7 @@ export class ProfileEventsService {
         { seekerId, reason, at: new Date().toISOString() },
         {
           jobId: `profile-${seekerId}`,
-          delay: 3000,
+          delay: MATCHING_DEBOUNCE_MS,
           attempts: 3,
           backoff: { type: 'exponential', delay: 5000 },
           removeOnComplete: true,

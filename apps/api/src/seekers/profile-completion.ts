@@ -14,7 +14,6 @@ export interface CompletionSnapshot {
   hasExperience: boolean | null;
   yearsOfExperience: number | null;
   positionCount: number;
-  hasVerifier: boolean;
   hasCv: boolean;
   completedAt: Date | null;
 }
@@ -32,9 +31,10 @@ const STEP_ENUM: Record<WizardStep, ProfileStep> = {
 };
 
 export function stepsDone(s: CompletionSnapshot): Record<WizardStep, boolean> {
+  // The verification contact is optional (owner's decision, batch 3); validated only when given.
   const experience =
     s.hasExperience === false ||
-    (s.hasExperience === true && s.yearsOfExperience !== null && s.positionCount > 0 && s.hasVerifier);
+    (s.hasExperience === true && s.yearsOfExperience !== null && s.positionCount > 0);
   return {
     personal: s.hasPerson,
     affiliation: s.hasPerson && (!s.darRequired || !!s.darId) && (!s.fakhdhRequired || !!s.fakhdhId),

@@ -13,7 +13,16 @@ import { Alert, Button, ButtonLink, Card, EmptyState, OtpInput, PageHeader, useT
 import { useCountdown } from './useCountdown';
 
 /** S-04 Email verification: 6-digit code, resend after a countdown, change email. */
-export function VerifyEmailForm({ email, wait }: { email?: string; wait: number }) {
+export function VerifyEmailForm({
+  email,
+  wait,
+  employer = false,
+}: {
+  email?: string;
+  wait: number;
+  /** Came from the employer sign-up (S-10): "change email" goes back there. */
+  employer?: boolean;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const toast = useToast();
@@ -123,7 +132,11 @@ export function VerifyEmailForm({ email, wait }: { email?: string; wait: number 
                 ? t('auth.verify.resendIn', { time: mmss(countdown.left) })
                 : t('auth.verify.resend')}
             </Button>
-            <ButtonLink href={`/signup?email=${encodeURIComponent(email)}`} variant="ghost" size="sm">
+            <ButtonLink
+              href={`${employer ? '/signup/employer' : '/signup'}?email=${encodeURIComponent(email)}`}
+              variant="ghost"
+              size="sm"
+            >
               {t('auth.verify.changeEmail')}
             </ButtonLink>
           </div>

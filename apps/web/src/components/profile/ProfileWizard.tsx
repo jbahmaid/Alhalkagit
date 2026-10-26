@@ -99,7 +99,8 @@ export function ProfileWizard({
         await api<ProfileDto>('/me/profile/complete', { method: 'POST' });
         onProfile(await api<ProfileDto>('/me/profile'));
         toast(t('doneToast'));
-        router.push(PROFILE_PATH);
+        // Prototype S-05 -> S-07: the finished profile leads straight to the ranked jobs.
+        router.push('/seeker/jobs');
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'PROFILE_INCOMPLETE') {

@@ -5,13 +5,13 @@ import { AppConfigModule } from '../config/config.module';
 import { CryptoModule } from '../crypto/crypto.module';
 import { CvAnalysisModule } from '../cv-analysis/cv-analysis.module';
 import { FileStorageModule } from '../files/files.module';
-import { MatchingModule } from '../matching/matching.module';
+import { MatchingWorkerModule } from '../matching/matching.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 /**
  * Background worker (same image as the API, different command): emails, CV analysis and the
- * profile.updated hook for match scores (no-op until batch 3).
+ * matching (match_scores after profile and job changes).
  */
 @Module({
   imports: [
@@ -23,7 +23,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     NotificationsModule.forWorker(),
     FileStorageModule,
     CvAnalysisModule,
-    MatchingModule,
+    MatchingWorkerModule,
   ],
 })
 export class WorkerModule {}
