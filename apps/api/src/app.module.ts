@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JobsModule } from './jobs/jobs.module';
 import { SeekersModule } from './seekers/seekers.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { SeekersModule } from './seekers/seekers.module';
     SeekersModule,
     JobsModule,
     AdminModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [

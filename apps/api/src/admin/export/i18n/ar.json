@@ -6,7 +6,10 @@
     "interests": "طلبات الاهتمام",
     "hires": "التوظيف",
     "users": "المستخدمون",
-    "audit": "سجل التدقيق"
+    "audit": "سجل التدقيق",
+    "reportSeekers": "تقرير الباحثين",
+    "reportJobs": "تقرير الفرص",
+    "reportInfo": "معلومات التقرير"
   },
   "cols": {
     "name": "الاسم",
@@ -81,7 +84,12 @@
     "entityId": "معرّف السجل",
     "ip": "عنوان IP",
     "before": "قبل",
-    "after": "بعد"
+    "after": "بعد",
+    "report": "التقرير",
+    "category": "الفئة",
+    "count": "العدد",
+    "item": "البند",
+    "value": "القيمة"
   },
   "values": {
     "yes": "نعم",
@@ -89,15 +97,26 @@
     "present": "حتى الآن"
   },
   "enums": {
-    "role": { "SEEKER": "باحث عن عمل", "EMPLOYER": "صاحب عمل", "ADMIN": "مدير", "SUPER_ADMIN": "مدير أعلى" },
+    "role": {
+      "SEEKER": "باحث عن عمل",
+      "EMPLOYER": "صاحب عمل",
+      "ADMIN": "مدير",
+      "SUPER_ADMIN": "مدير أعلى"
+    },
     "userStatus": {
       "PENDING_VERIFICATION": "بانتظار توثيق البريد",
       "ACTIVE": "نشط",
       "SUSPENDED": "موقوف",
       "DISABLED": "معطّل"
     },
-    "idType": { "NATIONAL_ID": "هوية وطنية", "PASSPORT": "جواز سفر" },
-    "gender": { "MALE": "ذكر", "FEMALE": "أنثى" },
+    "idType": {
+      "NATIONAL_ID": "هوية وطنية",
+      "PASSPORT": "جواز سفر"
+    },
+    "gender": {
+      "MALE": "ذكر",
+      "FEMALE": "أنثى"
+    },
     "approval": {
       "PENDING": "بانتظار الاعتماد",
       "APPROVED": "معتمد",
@@ -112,8 +131,14 @@
       "INTERNSHIP": "تدريب",
       "FREELANCE": "عمل حر"
     },
-    "jobStatus": { "OPEN": "متاحة", "UNAVAILABLE": "غير متوفرة" },
-    "outcome": { "HIRED_VIA_PLATFORM": "تم التوظيف عبر المنصة", "CLOSED_WITHOUT_HIRING": "أغلقت دون توظيف" },
+    "jobStatus": {
+      "OPEN": "متاحة",
+      "UNAVAILABLE": "غير متوفرة"
+    },
+    "outcome": {
+      "HIRED_VIA_PLATFORM": "تم التوظيف عبر المنصة",
+      "CLOSED_WITHOUT_HIRING": "أغلقت دون توظيف"
+    },
     "interest": {
       "SUBMITTED": "مُرسل",
       "VIEWED": "اطّلع عليه صاحب العمل",
@@ -121,6 +146,57 @@
       "HIRED": "تم التوظيف",
       "NOT_SELECTED": "لم يُختر",
       "WITHDRAWN": "مسحوب"
+    }
+  },
+  "reports": {
+    "hidden": "مخفية (أقل من {min})",
+    "all": "الكل",
+    "unspecified": "غير محدد",
+    "sections": {
+      "seekersTotal": "إجمالي الباحثين",
+      "withExperience": "لديهم خبرة",
+      "withoutExperience": "بلا خبرة",
+      "byAge": "حسب العمر",
+      "byGender": "حسب الجنس",
+      "byEducation": "حسب المستوى التعليمي",
+      "byExperience": "حسب الخبرة",
+      "bySector": "حسب قطاع الخبرة",
+      "byNationality": "حسب الجنسية",
+      "jobsTotal": "إجمالي الفرص",
+      "open": "متاحة",
+      "unavailable": "غير متوفرة",
+      "hiredViaPlatform": "تم التوظيف عبر المنصة",
+      "closedWithoutHiring": "أغلقت دون توظيف",
+      "interestRequests": "طلبات الاهتمام",
+      "jobsBySector": "الفرص حسب القطاع",
+      "jobsByStatus": "الفرص حسب الحالة"
+    },
+    "ageBands": {
+      "UNDER_18": "أقل من 18",
+      "18_24": "18–24",
+      "25_34": "25–34",
+      "35_44": "35–44",
+      "45_54": "45–54",
+      "55_PLUS": "55+"
+    },
+    "experience": {
+      "YES": "لديهم خبرة",
+      "NO": "بلا خبرة",
+      "UNSPECIFIED": "لم يُحدد بعد"
+    },
+    "status": {
+      "OPEN": "متاحة",
+      "HIRED_VIA_PLATFORM": "تم التوظيف عبر المنصة",
+      "CLOSED_WITHOUT_HIRING": "أغلقت دون توظيف"
+    },
+    "info": {
+      "generatedAt": "وقت الإنشاء",
+      "minGroupSize": "أقل عدد لعرض فئة",
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "sector": "القطاع",
+      "country": "الدولة",
+      "note": "الفئات الأقل من الحد مخفية لحماية الخصوصية."
     }
   }
 }
