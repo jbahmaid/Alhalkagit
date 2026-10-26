@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { isEmail } from '@/lib/errors';
-import { Alert, Button, Checkbox, ChoiceGroup, Icon, TextField } from '@/components/ui';
+import { useLookupName } from '@/lib/lookups';
+import { Alert, Button, Checkbox, ChoiceGroup, Icon, SelectField, TextField } from '@/components/ui';
 import {
   Grid2,
   Group,
@@ -21,6 +22,7 @@ interface PositionDraft {
   id?: string;
   title: string;
   organization: string;
+  sectorId: string;
   start: string; // YYYY-MM
   end: string; // YYYY-MM
   current: boolean;
@@ -31,6 +33,7 @@ const blank = (): PositionDraft => ({
   key: `new-${++seq}`,
   title: '',
   organization: '',
+  sectorId: '',
   start: '',
   end: '',
   current: false,
@@ -40,13 +43,15 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 /** Step 5: experience, unlimited positions and a verification contact (FR-2.1.7, FR-2.1.8). */
 export const ExperienceStep = forwardRef<StepHandle, StepProps>(function ExperienceStep(
-  { profile, onProfile },
+  { profile, lists, onProfile },
   ref,
 ) {
   const t = useTranslations('profile');
   const tv = useTranslations('validation');
   const tc = useTranslations('common');
   const ex = profile.experience;
+  const sectors = lists.sectors;
+  const name = useLookupName();
   const [has, setHas] = useState<string | null>(
     ex.hasExperience === null ? null : ex.hasExperience ? 'yes' : 'no',
   );
@@ -58,6 +63,7 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
           id: p.id,
           title: p.title,
           organization: p.organization ?? '',
+          sectorId: p.sectorId ?? '',
           start: p.startDate.slice(0, 7),
           end: p.endDate ? p.endDate.slice(0, 7) : '',
           current: p.endDate === null,
@@ -130,6 +136,7 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
                 ...(p.id ? { id: p.id } : {}),
                 title: p.title,
                 organization: p.organization.trim() || null,
+                sectorId: p.sectorId || null,
                 startDate: p.start,
                 endDate: p.current ? null : p.end,
               })),
@@ -204,6 +211,16 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
                   value={p.organization}
                   onChange={(e) => patch(i, { organization: e.target.value })}
                   error={fe[`${f}organization`]}
+                />
+                <SelectField
+                  id={`w-${p.key}-sector`}
+                  label={t('posSector')}
+                  hint={t('posSectorHint')}
+                  optional
+                  options={(sectors ?? []).map((x) => ({ value: x.id, label: name(x) }))}
+                  value={p.sectorId}
+                  onChange={(e) => patch(i, { sectorId: e.target.value })}
+                  error={fe[`${f}sectorId`]}
                 />
                 <Grid2>
                   <TextField
