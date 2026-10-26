@@ -13,7 +13,7 @@ import { forwardRef, useEffect, useId, useImperativeHandle, useRef, useState, ty
 import { api, upload } from '@/lib/api';
 import { useApiErrors } from '@/lib/errors';
 import { formatBytes, formatDate } from '@/lib/format';
-import { useLookupName } from '@/lib/lookups';
+import { useLookupOptions } from '@/lib/lookups';
 import {
   Alert,
   Badge,
@@ -257,7 +257,7 @@ function AnalysisCard({ profile, lists, onProfile }: StepProps) {
   const errs = useApiErrors();
   const toast = useToast();
   const locale = useLocale();
-  const name = useLookupName();
+  const options = useLookupOptions();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { analysisEnabled, analysis, file } = profile.cv;
@@ -330,7 +330,7 @@ function AnalysisCard({ profile, lists, onProfile }: StepProps) {
           label={t('suggestedSector')}
           hint={t('sectorFix')}
           optional
-          options={(lists.sectors ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+          options={options(lists.sectors, analysis.sectorId)}
           value={analysis.sectorId ?? ''}
           disabled={saving}
           onChange={(e) => void correct(e.target.value)}

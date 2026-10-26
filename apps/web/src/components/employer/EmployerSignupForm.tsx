@@ -6,7 +6,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api';
 import { focusFirstInvalid, isEmail, useApiErrors } from '@/lib/errors';
-import { useLookupName, useLookups } from '@/lib/lookups';
+import { useLookupOptions, useLookups } from '@/lib/lookups';
 import {
   Alert,
   Button,
@@ -28,7 +28,7 @@ export function EmployerSignupForm({ initialEmail = '' }: { initialEmail?: strin
   const errs = useApiErrors();
   const form = useRef<HTMLFormElement>(null);
   const { lists } = useLookups(['sectors', 'business-types']);
-  const name = useLookupName();
+  const options = useLookupOptions();
   const [v, setV] = useState({
     contactName: '',
     organizationName: '',
@@ -112,7 +112,7 @@ export function EmployerSignupForm({ initialEmail = '' }: { initialEmail?: strin
           <SelectField
             id="e-sec"
             label={te('sector')}
-            options={(lists.sectors ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+            options={options(lists.sectors)}
             value={v.sectorId}
             onChange={set('sectorId')}
             error={fieldErrors.sectorId}
@@ -121,7 +121,7 @@ export function EmployerSignupForm({ initialEmail = '' }: { initialEmail?: strin
             id="e-btype"
             label={te('btype')}
             hint={te('btypeHint')}
-            options={(lists['business-types'] ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+            options={options(lists['business-types'])}
             value={v.businessTypeId}
             onChange={set('businessTypeId')}
             error={fieldErrors.businessTypeId}

@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import { api } from '@/lib/api';
 import { focusFirstInvalid, useApiErrors } from '@/lib/errors';
-import { useLookupName, useLookups } from '@/lib/lookups';
+import { useLookupOptions, useLookups } from '@/lib/lookups';
 import { useApi } from '@/lib/use-api';
 import {
   Alert,
@@ -112,7 +112,7 @@ function Editor({ jobId, initial }: { jobId?: string; initial: Draft | null }) {
   const errs = useApiErrors();
   const form = useRef<HTMLFormElement>(null);
   const { lists } = useLookups(['sectors', 'countries', 'education-levels']);
-  const name = useLookupName();
+  const options = useLookupOptions();
   const [d, setD] = useState<Draft>(
     initial ?? {
       title: '',
@@ -207,7 +207,7 @@ function Editor({ jobId, initial }: { jobId?: string; initial: Draft | null }) {
         <SelectField
           id="pj-sec"
           label={t('sector')}
-          options={(lists.sectors ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+          options={options(lists.sectors, initial?.sectorId)}
           value={d.sectorId}
           onChange={set('sectorId')}
           error={fe.sectorId}
@@ -224,7 +224,7 @@ function Editor({ jobId, initial }: { jobId?: string; initial: Draft | null }) {
           <SelectField
             id="pj-country"
             label={t('country')}
-            options={(lists.countries ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+            options={options(lists.countries, initial?.countryId)}
             value={d.countryId}
             onChange={set('countryId')}
             error={fe.countryId}
@@ -236,7 +236,7 @@ function Editor({ jobId, initial }: { jobId?: string; initial: Draft | null }) {
             label={t('reqEdu')}
             optional
             placeholder={t('anyEdu')}
-            options={(lists['education-levels'] ?? []).map((s) => ({ value: s.id, label: name(s) }))}
+            options={options(lists['education-levels'], initial?.requiredEducationLevelId)}
             value={d.requiredEducationLevelId}
             onChange={set('requiredEducationLevelId')}
             error={fe.requiredEducationLevelId}

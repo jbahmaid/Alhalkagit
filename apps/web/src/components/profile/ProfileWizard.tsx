@@ -15,7 +15,7 @@ import { PersonalStep } from './PersonalStep';
 import { AffiliationStep, ContactStep, EducationStep } from './SimpleSteps';
 import type { StepHandle, StepProps } from './step-kit';
 
-const STEP_COMPONENTS: ComponentType<StepProps & RefAttributes<StepHandle>>[] = [
+export const STEP_COMPONENTS: ComponentType<StepProps & RefAttributes<StepHandle>>[] = [
   PersonalStep,
   AffiliationStep,
   ContactStep,

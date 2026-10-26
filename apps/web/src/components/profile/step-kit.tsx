@@ -2,9 +2,27 @@
 
 import type { ProfileDto } from '@sanad/shared';
 import { useTranslations } from 'next-intl';
-import { useCallback, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { Lookups } from '@/lib/lookups';
 import { useApiErrors } from '@/lib/errors';
+import { PROFILE_PATH } from '@/lib/use-profile';
+
+/**
+ * Where the profile screens read and write. The seeker uses /me/profile; an admin (S-20) edits a
+ * seeker's profile through /admin/users/:id/profile with the same step components.
+ */
+export interface ProfileApi {
+  base: string;
+  /** Link that opens step n for editing, or null when the section cannot be edited here. */
+  editHref: (n: number) => string | null;
+}
+
+export const ProfileApiContext = createContext<ProfileApi>({
+  base: '/me/profile',
+  editHref: (n) => `${PROFILE_PATH}?step=${n}`,
+});
+
+export const useProfileApi = () => useContext(ProfileApiContext);
 
 /** What the wizard asks of each step: save it (null when it did not validate). */
 export interface StepHandle {

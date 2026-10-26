@@ -62,7 +62,10 @@ export function Header() {
         {nav.length > 0 && (
           <nav aria-label={t('common.mainNav')} className="flex flex-wrap gap-1 pb-2">
             {nav.map((item) => {
-              const active = pathname === item.href;
+              // Sub-pages light up their section (/admin/users/x -> Users); role homes match exactly.
+              const active =
+                pathname === item.href ||
+                (item.href.split('/').length > 2 && pathname.startsWith(`${item.href}/`));
               return (
                 <Link
                   key={item.href}

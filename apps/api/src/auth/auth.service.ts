@@ -480,7 +480,7 @@ export class AuthService {
     const perms = await this.permissions.effective(user.id, user.role);
     const displayName = user.person
       ? `${user.person.firstName} ${user.person.familyName}`
-      : (user.employer?.contactName ?? user.username ?? user.email.split('@')[0]);
+      : (user.employer?.contactName ?? user.displayName ?? user.username ?? user.email.split('@')[0]);
     return {
       id: user.id,
       email: user.email,

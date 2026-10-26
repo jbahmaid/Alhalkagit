@@ -1,16 +1,26 @@
 import { Body, Controller, Get, HttpCode, Inject, Patch, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { MeDto, PendingVerificationDto, REFRESH_COOKIE, RefreshResultDto, SessionDto } from '@sanad/shared';
+import {
+  AccountDto,
+  MeDto,
+  PendingVerificationDto,
+  REFRESH_COOKIE,
+  RefreshResultDto,
+  SessionDto,
+} from '@sanad/shared';
 import type { Request, Response } from 'express';
 import { AllowPendingPasswordChange, AuthUser, CurrentUser, Public } from '../common/decorators';
 import { AppConfig } from '../config/app-config';
 import { APP_CONFIG } from '../config/config.module';
+import { AccountService } from './account.service';
 import { AuthService, ClientMeta, IssuedSession } from './auth.service';
 import { clearSessionCookies, setSessionCookies } from './cookies';
 import {
   ChangePasswordDto,
+  ConfirmEmailChangeDto,
   EmailDto,
   LoginDto,
+  RequestEmailChangeDto,
   ResetPasswordDto,
   SignupEmployerDto,
   SignupSeekerDto,
@@ -158,5 +168,34 @@ export class MeController {
   @Patch()
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateMeDto): Promise<MeDto> {
     return this.auth.updateLocale(user.id, dto.locale);
+  }
+}
+
+/** "My account" for every role (S-20 batch 4): change the login email with a code. */
+@Controller('me/account')
+export class AccountController {
+  constructor(private readonly account: AccountService) {}
+
+  @Get()
+  get(@CurrentUser() user: AuthUser): Promise<AccountDto> {
+    return this.account.get(user.id);
+  }
+
+  /** Re-enter the password; a code goes to the new address. */
+  @Throttle(EMAIL_SENDING)
+  @Post('email')
+  @HttpCode(200)
+  requestEmail(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RequestEmailChangeDto,
+  ): Promise<PendingVerificationDto> {
+    return this.account.requestEmailChange(user.id, dto);
+  }
+
+  @Throttle(STRICT)
+  @Post('email/confirm')
+  @HttpCode(200)
+  confirmEmail(@CurrentUser() user: AuthUser, @Body() dto: ConfirmEmailChangeDto): Promise<AccountDto> {
+    return this.account.confirmEmailChange(user.id, dto);
   }
 }

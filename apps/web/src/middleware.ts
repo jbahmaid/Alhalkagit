@@ -5,7 +5,7 @@ import { routing } from './i18n/routing';
 const intl = createMiddleware(routing);
 
 /** Areas that need a signed-in user. The API enforces access; this only saves a round trip. */
-const PROTECTED = /^\/(ar|en)\/(seeker|employer|admin|change-password)(\/|$)/;
+const PROTECTED = /^\/(ar|en)\/(seeker|employer|admin|account|change-password)(\/|$)/;
 const SESSION_HINT_COOKIE = 'sanad_session';
 
 export default function middleware(req: NextRequest) {

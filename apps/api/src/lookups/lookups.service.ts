@@ -4,9 +4,13 @@ import { Errors } from '../common/app-exception';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ORDER = [{ sortOrder: 'asc' as const }, { nameAr: 'asc' as const }];
-const BASE = { id: true, nameAr: true, nameEn: true, sortOrder: true } as const;
+const BASE = { id: true, nameAr: true, nameEn: true, sortOrder: true, isActive: true } as const;
 
-/** Read-only lookup lists for forms. Active, not deleted, sorted. Admin CRUD comes later (S-19). */
+/**
+ * Read-only lookup lists for forms (admin CRUD is AdminLookupsService, S-19). Inactive items are
+ * included with isActive false so existing records still show their names; the web offers only
+ * active items in dropdowns. Server-side validation of new values still requires isActive.
+ */
 @Injectable()
 export class LookupsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -18,7 +22,7 @@ export class LookupsService {
   async list(type: string): Promise<LookupItemDto[]> {
     if (!this.isType(type)) throw Errors.notFound('LOOKUP_TYPE_UNKNOWN');
     const db = this.prisma.db;
-    const where = { isActive: true };
+    const where = {};
     switch (type) {
       case 'countries': {
         const rows = await db.country.findMany({ where, orderBy: ORDER, select: { ...BASE, isoCode: true } });

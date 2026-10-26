@@ -4,6 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ClsModule } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
 import type { Request } from 'express';
+import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
@@ -51,6 +52,7 @@ import { SeekersModule } from './seekers/seekers.module';
     FilesModule,
     SeekersModule,
     JobsModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   providers: [

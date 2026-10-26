@@ -15,19 +15,33 @@ import { useApiErrors } from '@/lib/errors';
 import { formatBytes, formatDate, formatMonth } from '@/lib/format';
 import { useLookupName, type Lookups } from '@/lib/lookups';
 import { Alert, Badge, Button, ButtonLink, Card, Icon, Kv, PageHeader } from '@/components/ui';
-import { stepHref } from './ProfileWizard';
+import { useProfileApi } from './step-kit';
 
 const byId = (list: LookupItemDto[] | undefined, id: string | null | undefined) =>
   id ? list?.find((x) => x.id === id) : undefined;
 
-/** "ملفي" after completion: each section with an edit link back to its wizard step. */
-export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists: Lookups }) {
+/**
+ * "ملفي" after completion: each section with an edit link back to its wizard step. `embedded`
+ * (admin S-20) drops the page title; `idAction` sits next to the masked ID (admin reveal).
+ */
+export function ProfileSummary({
+  profile,
+  lists,
+  embedded = false,
+  idAction,
+}: {
+  profile: ProfileDto;
+  lists: Lookups;
+  embedded?: boolean;
+  idAction?: ReactNode;
+}) {
   const t = useTranslations('profile');
   const locale = useLocale();
   const name = useLookupName();
   const errs = useApiErrors();
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const { base } = useProfileApi();
   const { personal: p, affiliation: a, contact: c, education: ed, experience: ex, cv } = profile;
   const none = <span className="text-text-muted">{t('notProvided')}</span>;
   const or = (v: ReactNode) => (v === null || v === undefined || v === '' ? none : v);
@@ -36,7 +50,7 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
     setDownloading(true);
     setError(null);
     try {
-      const link = await api<FileLinkDto>('/me/profile/cv/link', { method: 'POST' });
+      const link = await api<FileLinkDto>(`${base}/cv/link`, { method: 'POST' });
       window.location.assign(link.url);
     } catch (err) {
       setError(errs.message(err));
@@ -50,12 +64,16 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
 
   return (
     <>
-      <PageHeader title={t('title')} lead={t('summaryLead')} />
-      <div className="mb-4">
-        <Badge variant="match" icon="check">
-          {t('completeBadge')}
-        </Badge>
-      </div>
+      {!embedded && (
+        <>
+          <PageHeader title={t('title')} lead={t('summaryLead')} />
+          <div className="mb-4">
+            <Badge variant="match" icon="check">
+              {t('completeBadge')}
+            </Badge>
+          </div>
+        </>
+      )}
       <Alert>{error}</Alert>
       <div className="grid gap-4 lg:grid-cols-2">
         <Section step="personal" n={1}>
@@ -65,8 +83,9 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                 [t('fullName'), [p.firstName, p.fatherName, p.grandfatherName, p.familyName].join(' ')],
                 [
                   p.idType === 'PASSPORT' ? t('passNo') : t('idNo'),
-                  <span key="id" dir="ltr">
-                    {p.idNumberMasked}
+                  <span key="id" className="flex flex-wrap items-center gap-2">
+                    <span dir="ltr">{p.idNumberMasked}</span>
+                    {idAction}
                   </span>,
                 ],
                 [t('gender'), p.gender === 'MALE' ? t('male') : t('female')],
@@ -194,19 +213,17 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
 function Section({ step, n, children }: { step: WizardStep; n: number; children: ReactNode }) {
   const t = useTranslations('profile');
   const title = t(`steps.${step}`);
+  const href = useProfileApi().editHref(n);
   return (
     <Card>
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="m-0 text-lg font-semibold">{title}</h2>
-        <ButtonLink
-          href={stepHref(n)}
-          variant="ghost"
-          size="sm"
-          aria-label={t('editSection', { section: title })}
-        >
-          <Icon name="pencil" className="h-4 w-4" />
-          {t('edit')}
-        </ButtonLink>
+        {href && (
+          <ButtonLink href={href} variant="ghost" size="sm" aria-label={t('editSection', { section: title })}>
+            <Icon name="pencil" className="h-4 w-4" />
+            {t('edit')}
+          </ButtonLink>
+        )}
       </div>
       {children}
     </Card>

@@ -33,5 +33,23 @@
     "intro": "A job seeker expressed interest in your job \"{jobTitle}\" and agreed to share their profile with you.",
     "button": "View applicants"
   },
+  "emailChangeCode": {
+    "subject": "Confirm your new email for Sanad",
+    "heading": "Confirm your new email",
+    "intro": "You asked to change your account email to this address. Enter the code below on the \"My account\" page to finish."
+  },
+  "emailChanged": {
+    "subject": "Your Sanad account email changed",
+    "heading": "Your account email changed",
+    "intro": "The sign-in email of your account changed to {newEmail}. If you did not ask for this, contact the platform administration right away."
+  },
+  "adminInvite": {
+    "subject": "Your Sanad admin account",
+    "heading": "Hello {name}",
+    "intro": "A system administrator created an admin account for you on Sanad. Sign in with the username and temporary password below; you will be asked to choose a new password right away.",
+    "loginLabel": "Sign-in name",
+    "passwordLabel": "Temporary password",
+    "button": "Sign in to Sanad"
+  },
   "noticeFooter": "You received this email because you have an account on Sanad."
 }

@@ -7,3 +7,4 @@ export * from './matching';
 export * from './locale';
 export * from './profile';
 export * from './jobs';
+export * from './admin';

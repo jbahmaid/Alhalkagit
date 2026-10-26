@@ -267,6 +267,21 @@ export class ProfileService {
     }
   }
 
+  /**
+   * A lookup value may be saved when it is active, or when it is the value already stored
+   * (an item deactivated later stays on existing records, FR-2.4.2).
+   */
+  private async usable(
+    model: 'country' | 'dar' | 'educationLevel',
+    id: string,
+    current: string | null | undefined,
+  ): Promise<boolean> {
+    const where = { id, ...(id === current ? {} : { isActive: true }) };
+    return (
+      ((await (this.db[model] as unknown as { count(a: object): Promise<number> }).count({ where })) ?? 0) > 0
+    );
+  }
+
   // -------------------------------------------------------------------------
   // Step 1: personal
   // -------------------------------------------------------------------------
@@ -275,13 +290,13 @@ export class ProfileService {
     const today = this.now();
     const errors = birthDateRules(dto.birthDate, today);
     if (dto.idNumber) errors.push(...idNumberRules(dto.idType, dto.idNumber));
-    if (!(await this.db.country.count({ where: { id: dto.nationalityId, isActive: true } }))) {
-      errors.push(err('nationalityId', 'LOOKUP_INVALID'));
-    }
     const profile = await this.profileOf(userId);
     const person = profile.personId
       ? await this.db.person.findFirst({ where: { id: profile.personId } })
       : null;
+    if (!(await this.usable('country', dto.nationalityId, person?.nationalityId))) {
+      errors.push(err('nationalityId', 'LOOKUP_INVALID'));
+    }
     if (!person && !dto.idNumber) errors.push(err('idNumber', 'isNotEmpty'));
 
     // ID: new number, or the stored one re-fingerprinted when only the type changed.
@@ -361,12 +376,13 @@ export class ProfileService {
     const { darRequired, fakhdhRequired } = await this.tribeRequirements(darId);
 
     if (darId) {
-      if (!(await this.db.dar.count({ where: { id: darId, isActive: true } })))
-        errors.push(err('darId', 'LOOKUP_INVALID'));
+      if (!(await this.usable('dar', darId, person.darId))) errors.push(err('darId', 'LOOKUP_INVALID'));
     } else if (darRequired) errors.push(err('darId', 'isNotEmpty'));
 
     if (fakhdhId) {
-      const fakhdh = await this.db.fakhdh.findFirst({ where: { id: fakhdhId, isActive: true } });
+      const fakhdh = await this.db.fakhdh.findFirst({
+        where: { id: fakhdhId, ...(fakhdhId === person.fakhdhId ? {} : { isActive: true }) },
+      });
       if (!fakhdh) errors.push(err('fakhdhId', 'LOOKUP_INVALID'));
       else if (fakhdh.darId && fakhdh.darId !== darId) errors.push(err('fakhdhId', 'FAKHDH_DAR_MISMATCH'));
     } else if (fakhdhRequired) errors.push(err('fakhdhId', 'isNotEmpty'));
@@ -407,10 +423,11 @@ export class ProfileService {
       ? await this.db.person.findFirst({ where: { id: profile.personId } })
       : null;
     const errors = graduationYearRules(dto.graduationYear, iso(person?.birthDate), this.now());
-    if (!(await this.db.educationLevel.count({ where: { id: dto.educationLevelId, isActive: true } }))) {
+    const saved = await this.educationOf(profile.id);
+    if (!(await this.usable('educationLevel', dto.educationLevelId, saved?.educationLevelId))) {
       errors.push(err('educationLevelId', 'LOOKUP_INVALID'));
     }
-    if (!(await this.db.country.count({ where: { id: dto.countryId, isActive: true } }))) {
+    if (!(await this.usable('country', dto.countryId, saved?.countryId))) {
       errors.push(err('countryId', 'LOOKUP_INVALID'));
     }
     throwIf(errors);
@@ -440,10 +457,19 @@ export class ProfileService {
   // Step 5: experience, positions, verifier
   // -------------------------------------------------------------------------
 
+  private async usedSectors(seekerId: string): Promise<string[]> {
+    const rows = await this.db.experiencePosition.findMany({
+      where: { seekerId },
+      select: { sectorId: true },
+    });
+    return rows.map((r) => r.sectorId).filter((x): x is string => !!x);
+  }
+
   private async validatePositions(
     list: PositionInputDto[],
     birthDate: string | null,
     prefix: (i: number) => string,
+    seekerId: string,
   ): Promise<{ start: string; end: string | null }[]> {
     const today = this.now();
     const errors: FieldErrorDetail[] = [];
@@ -453,7 +479,11 @@ export class ProfileService {
       sectorIds.length
         ? (
             await this.db.sector.findMany({
-              where: { id: { in: sectorIds }, isActive: true },
+              // active, or already on one of this seeker's positions (deactivated later)
+              where: {
+                id: { in: sectorIds },
+                OR: [{ isActive: true }, { id: { in: await this.usedSectors(seekerId) } }],
+              },
               select: { id: true },
             })
           ).map((s) => s.id)
@@ -511,7 +541,7 @@ export class ProfileService {
     const birthDate = await this.birthDateOf(profile);
     const positions = dto.hasExperience ? dto.positions : undefined;
     const dates = positions
-      ? await this.validatePositions(positions, birthDate, (i) => `positions.${i}.`)
+      ? await this.validatePositions(positions, birthDate, (i) => `positions.${i}.`, profile.id)
       : [];
     const verifier =
       dto.hasExperience && dto.verifier !== undefined && dto.verifier !== null
@@ -606,7 +636,7 @@ export class ProfileService {
 
   async createPosition(userId: string, dto: PositionInputDto): Promise<PositionDto> {
     const profile = await this.experienceProfile(userId);
-    const [d] = await this.validatePositions([dto], await this.birthDateOf(profile), () => '');
+    const [d] = await this.validatePositions([dto], await this.birthDateOf(profile), () => '', profile.id);
     const created = await this.write(profile.id, 'positions', async () => {
       const last = await this.db.experiencePosition.findFirst({
         where: { seekerId: profile.id },
@@ -627,7 +657,7 @@ export class ProfileService {
     const profile = await this.experienceProfile(userId);
     const current = await this.db.experiencePosition.findFirst({ where: { id, seekerId: profile.id } });
     if (!current) throw Errors.notFound('POSITION_NOT_FOUND');
-    const [d] = await this.validatePositions([dto], await this.birthDateOf(profile), () => '');
+    const [d] = await this.validatePositions([dto], await this.birthDateOf(profile), () => '', profile.id);
     const updated = await this.write(profile.id, 'positions', async () => {
       const changes = changedFields(current, this.positionData(dto, d));
       const row = Object.keys(changes).length
