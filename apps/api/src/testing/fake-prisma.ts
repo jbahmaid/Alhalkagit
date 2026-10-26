@@ -18,9 +18,23 @@ export function matches(row: Row, where: Row = {}): boolean {
     if (typeof v === 'object' && !(v instanceof Date)) {
       const cond = v as Row;
       if ('in' in cond) return (cond.in as unknown[]).some((x) => eq(x, row[k]));
+      if ('contains' in cond) {
+        const hay = String(row[k] ?? '');
+        const needle = String(cond.contains);
+        return cond.mode === 'insensitive'
+          ? hay.toLowerCase().includes(needle.toLowerCase())
+          : hay.includes(needle);
+      }
+      if (['gt', 'gte', 'lt', 'lte'].some((op) => op in cond)) {
+        const v0 = row[k];
+        return (
+          (!('gt' in cond) || v0 > cond.gt) &&
+          (!('gte' in cond) || v0 >= cond.gte) &&
+          (!('lt' in cond) || v0 < cond.lt) &&
+          (!('lte' in cond) || v0 <= cond.lte)
+        );
+      }
       if ('not' in cond) return !eq(row[k], cond.not);
-      if ('gt' in cond) return row[k] > cond.gt;
-      if ('lt' in cond) return row[k] < cond.lt;
       return matches(row[k] ?? {}, cond);
     }
     return eq(row[k], v);
@@ -224,6 +238,14 @@ export function createFakePrisma() {
     permission: new FakeTable(),
     rolePermission: new FakeTable(),
     userPermission: new FakeTable(),
+    auditLog: new FakeTable(() => ({
+      actorUserId: null,
+      actorRole: null,
+      entityId: null,
+      before: null,
+      after: null,
+      ip: null,
+    })),
     async $audit(entry: FakeAudit) {
       audits.push({ ...entry, actor: { ...actor } });
     },

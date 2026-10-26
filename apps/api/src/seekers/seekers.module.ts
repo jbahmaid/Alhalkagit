@@ -11,6 +11,6 @@ import { ProfileService } from './profile.service';
   imports: [BullModule.registerQueue({ name: QUEUES.cvAnalysis }, { name: QUEUES.matching })],
   controllers: [ProfileController],
   providers: [ProfileService, CvService, ProfileEventsService],
-  exports: [ProfileService, ProfileEventsService],
+  exports: [ProfileService, ProfileEventsService, CvService],
 })
 export class SeekersModule {}

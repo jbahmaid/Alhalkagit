@@ -14,6 +14,14 @@ export interface AccessPayload {
   typ: 'access';
 }
 
+/** Short-lived proof that an admin re-entered their password before an export (architecture §8). */
+export interface ExportPayload {
+  sub: string;
+  typ: 'export';
+}
+
+export const EXPORT_TOKEN_TTL_SECONDS = 300;
+
 /** A refresh token that was just rotated may be presented again for this long (parallel tabs). */
 export const REFRESH_RACE_GRACE_MS = 30_000;
 
@@ -56,6 +64,30 @@ export class TokenService {
       if (err instanceof TokenExpiredError) throw Errors.unauthenticated('AUTH_TOKEN_EXPIRED');
       throw Errors.unauthenticated('AUTH_TOKEN_INVALID');
     }
+  }
+
+  signExport(userId: string): { token: string; expiresAt: Date } {
+    const payload: ExportPayload = { sub: userId, typ: 'export' };
+    const token = this.jwt.sign(payload, {
+      secret: this.config.secrets.JWT_ACCESS_SECRET,
+      expiresIn: EXPORT_TOKEN_TTL_SECONDS,
+      algorithm: 'HS256',
+    });
+    return { token, expiresAt: new Date(Date.now() + EXPORT_TOKEN_TTL_SECONDS * 1000) };
+  }
+
+  /** The export token must be valid, of type 'export', and issued to this same user. */
+  verifyExport(token: string, userId: string): void {
+    let payload: ExportPayload;
+    try {
+      payload = this.jwt.verify<ExportPayload>(token, {
+        secret: this.config.secrets.JWT_ACCESS_SECRET,
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw Errors.forbidden('EXPORT_TOKEN_INVALID');
+    }
+    if (payload.typ !== 'export' || payload.sub !== userId) throw Errors.forbidden('EXPORT_TOKEN_INVALID');
   }
 
   /** Keyed hash of an opaque refresh token (only the hash is stored). */
