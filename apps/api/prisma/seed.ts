@@ -8,15 +8,17 @@
  *
  * متغيرات البيئة:
  *   DATABASE_URL            (إلزامي)
- *   ADMIN_EMAIL             بريد حساب المدير الأعلى. إن غاب لا يُنشأ الحساب.
- *   ADMIN_PASSWORD          كلمة مروره (12 حرفاً على الأقل). لا تُحفظ في المستودع.
- *   ADMIN_RESET_PASSWORD    "true" لإعادة تعيين كلمة مرور حساب موجود.
+ *   ADMIN_EMAIL             بريد حساب المدير الأساسي (admin) عند إنشائه أول مرة. إلزامي في أول تشغيل.
+ *   ADMIN_PASSWORD          كلمة مروره (12 حرفاً على الأقل). إن غابت تُولّد مؤقتة وتُطبع مرة واحدة.
+ *   ADMIN_RESET_PASSWORD    "true" لإعادة تعيين كلمة مرور الحساب (عند نسيانها).
  *   SEED_SAMPLE_TRIBE_DATA  "false" لتخطي الديار والأفخاذ التجريبية (افتراضياً تُضاف).
  *
  * التشغيل: npx prisma db seed  (مع "prisma": {"seed": "tsx prisma/seed.ts"} في package.json)
  */
 import { PrismaClient, Prisma, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
+import { ALL_COUNTRIES } from './data/countries';
 
 const prisma = new PrismaClient();
 
@@ -36,6 +38,7 @@ const PERMISSIONS: PermissionDef[] = [
   { code: 'jobs.own.manage', ar: 'إدارة فرصه', en: 'Manage own jobs', roles: [UserRole.EMPLOYER] },
   { code: 'interests.own.read', ar: 'قراءة طلبات الاهتمام على فرصه', en: 'Read interest requests on own jobs', roles: [UserRole.EMPLOYER] },
   { code: 'reports.general.read', ar: 'قراءة التقارير المجمّعة العامة', en: 'Read general aggregate reports', roles: [UserRole.EMPLOYER, ...ADMINS] },
+  { code: 'data.export', ar: 'تصدير كل البيانات والتقارير إلى Excel، بما فيها البيانات الخاصة', en: 'Export all data and reports to Excel, including private data', roles: ADMINS },
   { code: 'seekers.read', ar: 'قراءة ملفات الباحثين', en: 'Read seeker profiles', roles: ADMINS },
   { code: 'seekers.update', ar: 'تعديل ملفات الباحثين', en: 'Update seeker profiles', roles: ADMINS },
   { code: 'seekers.id_number.reveal', ar: 'إظهار رقم الهوية', en: 'Reveal ID number', roles: ADMINS },
@@ -58,6 +61,17 @@ const PERMISSIONS: PermissionDef[] = [
 // ---------------------------------------------------------------------------
 
 type Lookup = { code: string; ar: string; en: string };
+
+// تصنيف قطاع الأعمال لصاحب العمل (يختاره عند التسجيل، ويعدّله المدير)
+const BUSINESS_TYPES: Lookup[] = [
+  { code: 'GOV', ar: 'جهة حكومية', en: 'Government entity' },
+  { code: 'SEMI_GOV', ar: 'جهة شبه حكومية', en: 'Semi-government entity' },
+  { code: 'PRIVATE_LARGE', ar: 'قطاع خاص: شركة كبيرة', en: 'Private sector: large company' },
+  { code: 'PRIVATE_SME', ar: 'قطاع خاص: منشأة صغيرة أو متوسطة', en: 'Private sector: small or medium business' },
+  { code: 'NON_PROFIT', ar: 'جهة غير ربحية أو خيرية', en: 'Non-profit or charity' },
+  { code: 'INDIVIDUAL', ar: 'فرد أو عمل حر', en: 'Individual or freelance' },
+  { code: 'INTERNATIONAL', ar: 'جهة دولية أو خارج المملكة', en: 'International or outside Saudi Arabia' },
+];
 
 const SECTORS: Lookup[] = [
   { code: 'IT', ar: 'تقنية المعلومات والاتصالات', en: 'Information & Communications Technology' },
@@ -91,8 +105,8 @@ const EDUCATION_LEVELS: (Lookup & { rank: number })[] = [
   { code: 'DOCTORATE', ar: 'دكتوراه', en: 'Doctorate (PhD)', rank: 60 },
 ];
 
-/** iso: ISO 3166-1 alpha-2. السعودية ثم الخليج أولاً. */
-const COUNTRIES: { iso: string; ar: string; en: string }[] = [
+/** iso: ISO 3166-1 alpha-2. الدول المقدّمة في رأس القائمة (السعودية ثم الخليج)، ثم بقية دول ALL_COUNTRIES بالترتيب الأبجدي العربي. */
+const PRIORITY_COUNTRIES: { iso: string; ar: string; en: string }[] = [
   { iso: 'SA', ar: 'المملكة العربية السعودية', en: 'Saudi Arabia' },
   { iso: 'AE', ar: 'الإمارات العربية المتحدة', en: 'United Arab Emirates' },
   { iso: 'KW', ar: 'الكويت', en: 'Kuwait' },
@@ -123,6 +137,13 @@ const COUNTRIES: { iso: string; ar: string; en: string }[] = [
   { iso: 'CA', ar: 'كندا', en: 'Canada' },
   { iso: 'AU', ar: 'أستراليا', en: 'Australia' },
   { iso: 'NZ', ar: 'نيوزيلندا', en: 'New Zealand' },
+];
+
+const COUNTRIES = [
+  ...PRIORITY_COUNTRIES,
+  ...ALL_COUNTRIES.filter((c) => !PRIORITY_COUNTRIES.some((p) => p.iso === c.iso)).sort((a, b) =>
+    a.ar.localeCompare(b.ar, 'ar'),
+  ),
 ];
 
 /** بيانات تجريبية فقط: يستبدلها المدير بالديار والأفخاذ الحقيقية من لوحة الإدارة. */
@@ -188,6 +209,13 @@ async function seedPermissions() {
 }
 
 async function seedLookups(includeSampleTribe: boolean) {
+  for (const [i, b] of BUSINESS_TYPES.entries()) {
+    await prisma.businessType.upsert({
+      where: { code: b.code },
+      create: { code: b.code, nameAr: b.ar, nameEn: b.en, sortOrder: (i + 1) * 10 },
+      update: {},
+    });
+  }
   for (const [i, s] of SECTORS.entries()) {
     await prisma.sector.upsert({
       where: { code: s.code },
@@ -245,46 +273,64 @@ async function seedSettings() {
   }
 }
 
+/**
+ * حساب المدير الأساسي (طلب صاحب المشروع، 26 أكتوبر 2026):
+ * - اسم الدخول: admin، والدور SUPER_ADMIN (يُنشئ حسابات المدراء الآخرين).
+ * - حساب نظام: لا يُحذف ولا يُعطّل ولا يُخفّض دوره، وتفرض ذلك مشغّلات في قاعدة البيانات.
+ * - البريد يُؤخذ من ADMIN_EMAIL عند الإنشاء فقط، ويمكن تعديله لاحقاً من المنصة.
+ * - كلمة المرور من ADMIN_PASSWORD، وإن غابت تُولّد عشوائياً وتُطبع مرة واحدة، ويُجبر على تغييرها عند أول دخول.
+ */
+const SYSTEM_ADMIN_USERNAME = 'admin';
+
 async function seedAdmin(): Promise<string | null> {
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password) {
-    console.warn('[seed] ADMIN_EMAIL / ADMIN_PASSWORD not set: skipping admin account.');
-    return null;
-  }
-  if (password.length < 12) {
+  const existing = await prisma.user.findUnique({ where: { username: SYSTEM_ADMIN_USERNAME } });
+  const resetPassword = process.env.ADMIN_RESET_PASSWORD === 'true';
+  let password = process.env.ADMIN_PASSWORD;
+  if (password && password.length < 12) {
     throw new Error('[seed] ADMIN_PASSWORD must be at least 12 characters.');
   }
-
-  const hash = () => argon2.hash(password, { type: argon2.argon2id });
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const generated = !password;
+  if (!password && (!existing || resetPassword)) {
+    password = randomBytes(12).toString('base64url');
+  }
+  const hash = () => argon2.hash(password as string, { type: argon2.argon2id });
+  const announce = () => {
+    if (generated) {
+      console.log(`[seed] Admin login: username "${SYSTEM_ADMIN_USERNAME}", temporary password: ${password}`);
+      console.log('[seed] You will be asked to change it on first login. It is not shown again.');
+    }
+  };
 
   if (!existing) {
+    const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    if (!email) {
+      throw new Error('[seed] ADMIN_EMAIL is required to create the system admin account.');
+    }
     const user = await prisma.user.create({
       data: {
         email,
+        username: SYSTEM_ADMIN_USERNAME,
         passwordHash: await hash(),
         role: UserRole.SUPER_ADMIN,
         status: 'ACTIVE',
+        isSystemAccount: true,
+        mustChangePassword: generated,
         emailVerifiedAt: new Date(),
         locale: 'ar',
       },
     });
+    announce();
     return user.id;
   }
 
-  // الحساب موجود: نضمن الدور والحالة فقط، ولا نغيّر كلمة المرور إلا بطلب صريح.
-  const resetPassword = process.env.ADMIN_RESET_PASSWORD === 'true';
-  await prisma.user.update({
-    where: { id: existing.id },
-    data: {
-      role: UserRole.SUPER_ADMIN,
-      status: 'ACTIVE',
-      emailVerifiedAt: existing.emailVerifiedAt ?? new Date(),
-      deletedAt: null,
-      ...(resetPassword ? { passwordHash: await hash() } : {}),
-    },
-  });
+  // الحساب موجود: لا نغيّر البريد (قد يكون عُدّل من المنصة)، ولا كلمة المرور إلا بطلب صريح.
+  if (resetPassword) {
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { passwordHash: await hash(), mustChangePassword: generated, failedLoginCount: 0, lockedUntil: null },
+    });
+    announce();
+  }
   return existing.id;
 }
 
@@ -305,6 +351,7 @@ async function main() {
       entity: 'seed',
       after: {
         permissions: PERMISSIONS.length,
+        businessTypes: BUSINESS_TYPES.length,
         sectors: SECTORS.length,
         educationLevels: EDUCATION_LEVELS.length,
         countries: COUNTRIES.length,

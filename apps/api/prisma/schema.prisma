@@ -182,7 +182,13 @@ model User {
   id               String     @id @default(uuid()) @db.Uuid
   /// يُخزّن بأحرف صغيرة (normalize في التطبيق)
   email            String     @unique @db.VarChar(254)
+  /// اسم دخول اختياري (حساب المدير الأساسي: admin). يُخزّن بأحرف صغيرة
+  username         String?    @unique @db.VarChar(64)
   passwordHash     String     @map("password_hash") /// Argon2id
+  /// حساب النظام الأساسي: لا يُحذف ولا يُعطّل ولا يُخفّض دوره (تفرضه مشغّلات قاعدة البيانات). البريد قابل للتعديل
+  isSystemAccount  Boolean    @default(false) @map("is_system_account")
+  /// يُجبر المستخدم على تغيير كلمة المرور عند أول دخول
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
   role             UserRole
   status           UserStatus @default(PENDING_VERIFICATION)
   emailVerifiedAt  DateTime?  @map("email_verified_at") @db.Timestamptz(3)
@@ -362,6 +368,24 @@ model Sector {
 
   @@index([isActive, sortOrder])
   @@map("sectors")
+}
+
+// تصنيف قطاع الأعمال لصاحب العمل (حكومي، شبه حكومي، خاص، غير ربحي، فرد...). يديره المدير. FR-2.2.1
+model BusinessType {
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String    @unique @db.VarChar(64)
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  employers Employer[]
+
+  @@index([isActive, sortOrder])
+  @@map("business_types")
 }
 
 /// المستوى التعليمي. rank يحدد الترتيب لمقارنة "يساوي المطلوب أو أعلى" في المطابقة.
@@ -636,6 +660,7 @@ model Employer {
   contactName      String                 @map("contact_name") @db.VarChar(200)
   organizationName String                 @map("organization_name") @db.VarChar(200)
   sectorId         String                 @map("sector_id") @db.Uuid
+  businessTypeId   String                 @map("business_type_id") @db.Uuid
   email            String                 @db.VarChar(254)
   phone            String                 @db.VarChar(20)
   approvalStatus   EmployerApprovalStatus @default(PENDING) @map("approval_status")
@@ -647,12 +672,14 @@ model Employer {
   deletedAt        DateTime?              @map("deleted_at") @db.Timestamptz(3)
 
   user       User   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  sector     Sector @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  sector       Sector       @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Restrict)
   approvedBy User?  @relation("EmployerApprover", fields: [approvedById], references: [id], onDelete: SetNull)
   jobs       Job[]
 
   @@index([approvalStatus, createdAt])
   @@index([sectorId])
+  @@index([businessTypeId])
   @@index([deletedAt])
   @@map("employers")
 }

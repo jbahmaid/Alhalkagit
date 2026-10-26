@@ -449,6 +449,12 @@ const T = {
   bySector:['حسب القطاع','By sector'],byStatus:['حسب الحالة','By status'],empReportsNote:['تقارير عامة مجمّعة، وأرقام فرصك أدناه.','General aggregated reports, plus figures for your own jobs below.'],
   myJobsStats:['أرقام فرصي','My jobs in numbers'],
   exportXlsx:['تصدير Excel','Export to Excel'],
+  btype:['تصنيف قطاع الأعمال','Business classification'],
+  btypeHint:['نوع جهتك: حكومية، شبه حكومية، خاصة، غير ربحية، فرد، أو دولية.','Your type of organization: government, semi-government, private, non-profit, individual or international.'],
+  tabBtype:['تصنيف قطاع الأعمال','Business classifications'],tabCountry:['الدول والجنسيات','Countries and nationalities'],
+  exportAll:['تصدير كل البيانات إلى Excel','Export all data to Excel'],exportTitle:['تأكيد التصدير','Confirm export'],
+  exportBody:['الملف يشمل البيانات الخاصة: أرقام الهوية، والدار والفخذ، وبيانات التواصل. أدخل كلمة المرور للتأكيد، وستُسجّل العملية في سجل التدقيق.','The file includes private data: ID numbers, dar and fakhdh, and contact details. Enter your password to confirm. The export is recorded in the audit log.'],
+  sysAccount:['حساب النظام','System account'],
   exportToast:['جُهّز ملف Excel بالبيانات المعروضة، وسُجّلت العملية في سجل التدقيق.','Excel file prepared with the data shown, and the export was recorded in the audit log.'],
 };
 function t(k,vars){const v=T[k];if(!v){console.warn('i18n missing:',k);return k;}let s=v[S.lang==='ar'?0:1];if(vars)for(const n in vars)s=s.replace('{'+n+'}',vars[n]);return s;}
@@ -461,8 +467,10 @@ const LK={
   fakhdh:[['آل سالم','Al Salem',1],['آل راشد','Al Rashed',1],['آل حمد','Al Hamad',1],['آل ناصر','Al Nasser',0]],
   sector:[['تقنية المعلومات','Information technology',1],['المالية والمحاسبة','Finance and accounting',1],['الموارد البشرية','Human resources',1],['الصحة','Healthcare',1],['الهندسة والإنشاءات','Engineering and construction',1],['التعليم والتدريب','Education and training',1],['المبيعات والتسويق','Sales and marketing',1],['اللوجستيات','Logistics',1]],
   edu:[['ثانوي','High school',1],['دبلوم','Diploma',1],['بكالوريوس',"Bachelor's",1],['ماجستير',"Master's",1],['دكتوراه','Doctorate',1]],
+  btype:[['جهة حكومية','Government entity',1],['جهة شبه حكومية','Semi-government entity',1],['قطاع خاص: شركة كبيرة','Private sector: large company',1],['قطاع خاص: منشأة صغيرة أو متوسطة','Private sector: small or medium business',1],['جهة غير ربحية أو خيرية','Non-profit or charity',1],['فرد أو عمل حر','Individual or freelance',1],['جهة دولية أو خارج المملكة','International or outside Saudi Arabia',1]],
 };
 const COUNTRIES={SA:['السعودية','Saudi Arabia'],AE:['الإمارات','UAE'],KW:['الكويت','Kuwait'],QA:['قطر','Qatar'],BH:['البحرين','Bahrain'],OM:['عُمان','Oman'],JO:['الأردن','Jordan'],EG:['مصر','Egypt'],GB:['المملكة المتحدة','United Kingdom'],US:['الولايات المتحدة','United States']};
+LK.country=Object.keys(COUNTRIES).map(c=>[COUNTRIES[c][0],COUNTRIES[c][1],1]);
 const lk=(type,i)=>LK[type][i]?L([LK[type][i][0],LK[type][i][1]]):'';
 
 /* Jobs. `owner` lives only in the server-side record; seeker screens use publicJob() which has no employer fields (mirrors the seeker DTO). */
@@ -498,11 +506,12 @@ const PEOPLE={
 };
 const APPS={1:[{s:'s1',score:86,d:'2026-10-23'},{s:'s2',score:78,d:'2026-10-23'},{s:'s4',score:72,d:'2026-10-24'},{s:'s3',score:61,d:'2026-10-25'}],2:[{s:'s1',score:74,d:'2026-10-20'},{s:'s4',score:66,d:'2026-10-21'}],7:[{s:'s2',score:81,d:'2026-09-05'},{s:'s4',score:70,d:'2026-09-06'}]};
 let PENDING=[
-  {id:'p1',name:['عبدالرحمن الشهري','Abdulrahman Al-Shehri'],org:['مؤسسة الأفق للمقاولات','Al-Ofuq Contracting'],sector:4,email:'a.shehri@ofuq.example',phone:'0532221100',d:'2026-10-25'},
-  {id:'p2',name:['هيفاء الزهراني','Haifa Al-Zahrani'],org:['مجموعة رعاية الطبية','Reaya Medical Group'],sector:3,email:'hr@reaya.example',phone:'0126654400',d:'2026-10-24'},
-  {id:'p3',name:['ماجد البقمي','Majed Al-Buqami'],org:['أكاديمية نماء للتدريب','Namaa Training Academy'],sector:5,email:'majed@namaa.example',phone:'0551002003',d:'2026-10-24'},
+  {id:'p1',name:['عبدالرحمن الشهري','Abdulrahman Al-Shehri'],org:['مؤسسة الأفق للمقاولات','Al-Ofuq Contracting'],sector:4,btype:3,email:'a.shehri@ofuq.example',phone:'0532221100',d:'2026-10-25'},
+  {id:'p2',name:['هيفاء الزهراني','Haifa Al-Zahrani'],org:['مجموعة رعاية الطبية','Reaya Medical Group'],sector:3,btype:2,email:'hr@reaya.example',phone:'0126654400',d:'2026-10-24'},
+  {id:'p3',name:['ماجد البقمي','Majed Al-Buqami'],org:['أكاديمية نماء للتدريب','Namaa Training Academy'],sector:5,btype:4,email:'majed@namaa.example',phone:'0551002003',d:'2026-10-24'},
 ];
 const USERS=[
+  {n:['مدير النظام الأساسي (admin)','System administrator (admin)'],r:'admin',e:'jbahmaid@gmail.com',s:'active',d:'2026-10-26',sys:1},
   {n:['خالد السالم','Khaled Al-Salem'],r:'seeker',e:'khaled.salem@example.com',s:'active',d:'2026-10-02'},
   {n:['نورة الفهد','Noura Al-Fahad'],r:'seeker',e:'noura.fahad@example.com',s:'active',d:'2026-09-28'},
   {n:['فيصل العمري','Faisal Al-Omari'],r:'seeker',e:'faisal.omari@example.com',s:'active',d:'2026-09-20'},
@@ -595,7 +604,7 @@ const backBtn=to=>`<button class="btn btn-ghost" data-go="${to}">${icon('chev','
 const loc=j=>`${esc(L(j.city))}${S.lang==='ar'?'، ':', '}${esc(L(COUNTRIES[j.country]))}`;
 const note=(kind,ic,html)=>`<div class="note ${kind}">${icon(ic)}<p>${html}</p></div>`;
 const roleName=r=>({seeker:t('roleSeeker'),employer:t('roleEmployer'),admin:t('roleAdmin')}[r]||'—');
-const exportBtn=()=>`<div class="actions" style="margin:0 0 16px"><button type="button" class="btn btn-secondary btn-sm" data-act="exportXlsx">${icon('download')}${t('exportXlsx')}</button></div>`;
+const exportBtn=(k='exportXlsx')=>`<div class="actions" style="margin:0 0 16px"><button type="button" class="btn btn-secondary btn-sm" data-act="exportXlsx">${icon('download')}${t(k)}</button></div>`;
 
 /* ======================= Screens ======================= */
 const V={};
@@ -757,6 +766,7 @@ V['S-10']=()=>`<div class="narrow">${pageHead(t('empSignupTitle'))}
   ${field({id:'e-name',label:t('empName'),value:L(EMP.e1.name),attrs:'autocomplete="name"'})}
   ${field({id:'e-org',label:t('org'),value:L(EMP.e1.org),attrs:'autocomplete="organization"'})}
   ${selectField({id:'e-sec',label:t('sector'),options:lkOpts('sector'),value:'0'})}
+  ${selectField({id:'e-btype',label:t('btype'),hint:t('btypeHint'),options:lkOpts('btype'),value:''})}
   ${field({id:'e-email',label:t('email'),type:'email',cls:'ltr',value:'sarah@madar.example',attrs:'autocomplete="email"'})}
   ${field({id:'e-phone',label:t('phone'),type:'tel',cls:'ltr',value:'0112345678',attrs:'inputmode="tel" autocomplete="tel"'})}
   ${field({id:'e-pw',label:t('password'),type:'password',hint:t('pwHint'),value:'',attrs:'autocomplete="new-password" minlength="8"'})}
@@ -798,7 +808,7 @@ V['S-13']=()=>`<div class="narrow">${backBtn('S-12')}${pageHead(t('postTitle'))}
 
 const curJob=()=>JOBS.find(j=>j.id===S.jobId&&j.owner==='e1')||JOBS[0];
 V['S-14']=()=>{const j=curJob();const apps=(APPS[j.id]||[]).slice().sort((a,b)=>b.score-a.score);
-  return `${backBtn('S-12')}${pageHead(t('applicantsTitle'),esc(L(j.title)))}${note('privacy','info',t('applicantsNote'))}${exportBtn()}
+  return `${backBtn('S-12')}${pageHead(t('applicantsTitle'),esc(L(j.title)))}${note('privacy','info',t('applicantsNote'))}
   ${apps.length?`<div class="job-list">${apps.map(a=>{const p=PEOPLE[a.s];return `<article class="card job" aria-labelledby="ap-${a.s}">
     <div class="job-top"><h2 id="ap-${a.s}">${esc(L(p.name))}</h2>${matchBadge(a.score)}</div>
     <ul class="meta"><li>${icon('user')}${p.age} ${t('yearsUnit')} · ${p.gender==='m'?t('male'):t('female')}</li><li>${icon('cap')}${esc(lk('edu',p.edu))}</li><li>${icon('clock')}${t('expN',{n:p.years})}</li></ul>
@@ -835,7 +845,7 @@ V['S-16']=()=>{const j=curJob();const apps=APPS[j.id]||[];const hired=S.closeOut
 
 /* Admin */
 const auditActionLabel=a=>t({create:'aCreate',update:'aUpdate',delete:'aDelete',login:'aLogin',loginFail:'aLoginFail',approve:'aApprove'}[a]);
-V['S-17']=()=>`${pageHead(t('adminTitle'))}
+V['S-17']=()=>`${pageHead(t('adminTitle'))}${exportBtn('exportAll')}
 <div class="stats">
   <div class="stat"><div class="n">${num(1248)}</div><div class="l">${t('seekers')}</div></div>
   <div class="stat"><div class="n">64</div><div class="l">${t('employersApproved')}</div></div>
@@ -854,12 +864,12 @@ V['S-17']=()=>`${pageHead(t('adminTitle'))}
 V['S-18']=()=>`${pageHead(t('approvalsTitle'))}${note('privacy','lock',t('approvalsNote'))}
 ${PENDING.length?`<div class="job-list">${PENDING.map(p=>`<article class="card job" aria-labelledby="pe-${p.id}">
   <div class="job-top"><h2 id="pe-${p.id}">${esc(L(p.org))}</h2><span class="badge match">${icon('check')}${t('emailVerified')}</span></div>
-  <dl class="kv"><dt>${t('empName')}</dt><dd>${esc(L(p.name))}</dd><dt>${t('sector')}</dt><dd>${esc(lk('sector',p.sector))}</dd>
+  <dl class="kv"><dt>${t('empName')}</dt><dd>${esc(L(p.name))}</dd><dt>${t('sector')}</dt><dd>${esc(lk('sector',p.sector))}</dd><dt>${t('btype')}</dt><dd>${esc(lk('btype',p.btype))}</dd>
   <dt>${t('email')}</dt><dd><span dir="ltr">${p.email}</span></dd><dt>${t('phone')}</dt><dd><span dir="ltr">${p.phone}</span></dd><dt>${t('registered')}</dt><dd>${fmtDate(p.d)}</dd></dl>
   <div class="job-foot"><span></span><div class="row-actions"><button class="btn btn-primary btn-sm" data-act="approve" data-id="${p.id}" aria-describedby="pe-${p.id}">${icon('check')}${t('approve')}</button><button class="btn btn-secondary btn-sm" data-act="reject" data-id="${p.id}" aria-describedby="pe-${p.id}">${t('reject')}</button></div></div></article>`).join('')}</div>`
 :`<div class="card empty">${icon('check')}<p>${t('noPending')}</p></div>`}`;
 
-const TABS=[['dar','tabDar'],['fakhdh','tabFakhdh'],['sector','tabSector'],['edu','tabEdu']];
+const TABS=[['dar','tabDar'],['fakhdh','tabFakhdh'],['sector','tabSector'],['btype','tabBtype'],['edu','tabEdu'],['country','tabCountry']];
 V['S-19']=()=>{const tab=S.lookupTab;return `${pageHead(t('lookupsTitle'),t('lookupsLead'))}
 <div role="tablist" aria-label="${t('lookupsTitle')}">${TABS.map(([k,l])=>`<button role="tab" id="tab-${k}" aria-controls="panel" aria-selected="${k===tab}" tabindex="${k===tab?0:-1}" data-act="tab" data-tab="${k}">${t(l)}</button>`).join('')}</div>
 <div id="panel" role="tabpanel" aria-labelledby="tab-${tab}">
@@ -880,7 +890,7 @@ V['S-20']=()=>`${pageHead(t('usersTitle'))}${exportBtn()}
 <div id="user-results">${userResults()}</div>`;
 function userResults(){const q=S.userQ.trim().toLowerCase();const rows=USERS.filter(u=>(!S.userRole||u.r===S.userRole)&&(!q||(u.n.join(' ')+u.e).toLowerCase().includes(q)));
   return `<p class="small muted" role="status">${num(rows.length)} / ${num(USERS.length)}</p>`+(rows.length?`<div class="table-wrap"><table class="rtable"><thead><tr><th>${t('name')}</th><th>${t('role')}</th><th>${t('email')}</th><th>${t('status')}</th><th>${t('registered')}</th><th>${t('actions')}</th></tr></thead><tbody>
-  ${rows.map(u=>`<tr><td data-label="${t('name')}"><strong>${esc(L(u.n))}</strong></td><td data-label="${t('role')}">${roleName(u.r)}</td><td data-label="${t('email')}"><span dir="ltr">${u.e}</span></td><td data-label="${t('status')}">${uStatus(u.s)}</td><td data-label="${t('registered')}">${fmtDate(u.d)}</td>
+  ${rows.map(u=>`<tr><td data-label="${t('name')}"><strong>${esc(L(u.n))}</strong>${u.sys?` <span class="badge primary">${icon('lock')}${t('sysAccount')}</span>`:''}</td><td data-label="${t('role')}">${roleName(u.r)}</td><td data-label="${t('email')}"><span dir="ltr">${u.e}</span></td><td data-label="${t('status')}">${uStatus(u.s)}</td><td data-label="${t('registered')}">${fmtDate(u.d)}</td>
   <td data-label="${t('actions')}"><button class="btn btn-secondary btn-sm" aria-label="${t('view')}: ${esc(L(u.n))}">${t('view')}</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty"><p>${t('noRows')}</p></div>`);}
 
 V['S-21']=()=>{const A=S.audit;const tables=[...new Set(AUDIT.map(a=>a.e))];return `${pageHead(t('auditTitle'))}${note('info','lock',t('auditNote'))}${exportBtn()}
@@ -907,7 +917,7 @@ function bars(title,rows,color='var(--primary)'){
     <div class="bar-label"><span>${esc(l)}</span><span class="v">${hidden?t('hiddenLt5'):num(v)}</span></div>
     <svg viewBox="0 0 100 14" preserveAspectRatio="none" focusable="false"><rect x="0" y="0" width="100" height="14" rx="1.5" fill="var(--surface-2)"/>${hidden?`<rect x="0.5" y="0.5" width="99" height="13" fill="none" stroke="var(--border)" stroke-dasharray="2 1.5" vector-effect="non-scaling-stroke"/>`:`<rect x="${x}" y="0" width="${w}" height="14" rx="1.5" fill="${color}"/>`}</svg></div>`;}).join('')}</figure>`;}
 V['S-22']=()=>{const emp=S.role==='employer';const js=myJobs();
-  return `${pageHead(t('reportsTitle'),emp?t('empReportsNote'):t('reportsLead'))}${note('info','shield',t('under5'))}${exportBtn()}
+  return `${pageHead(t('reportsTitle'),emp?t('empReportsNote'):t('reportsLead'))}${note('info','shield',t('under5'))}${emp?'':exportBtn()}
   ${emp?`<h2>${t('myJobsStats')}</h2><div class="stats"><div class="stat"><div class="n">${js.length}</div><div class="l">${t('totalJobs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.status==='open').length}</div><div class="l">${t('openJobs')}</div></div><div class="stat"><div class="n">${js.reduce((s,j)=>s+(APPS[j.id]||[]).length,0)}</div><div class="l">${t('interestReqs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.outcome==='hired').length}</div><div class="l">${t('hiredVia')}</div></div></div>`:''}
   <h2>${t('seekerStats')}</h2><div class="stats"><div class="stat"><div class="n">${num(1248)}</div><div class="l">${t('totalSeekers')}</div></div><div class="stat"><div class="n">${num(733)}</div><div class="l">${t('withExp')}</div></div></div>
   <div class="charts">
@@ -990,7 +1000,7 @@ const ACT={
     onConfirm(){S.myReqs.unshift({job:id,d:new Date().toISOString().slice(0,10)});render();toast(t('interestToast'));const h=$('#view h1');h&&h.focus();}});},
   simApprove(){S.empApproved=true;toast(t('approvedToast'));go('S-12');},
   noop(){},
-  exportXlsx(){toast(t('exportToast'));},
+  exportXlsx(){openDialog({title:t('exportTitle'),confirm:t('exportXlsx'),body:`<p>${t('exportBody')}</p>${field({id:'ex-pw',label:t('password'),type:'password',value:'',attrs:'autocomplete="current-password"'})}`,onConfirm(){toast(t('exportToast'));}});},
   openCv(el,e){e.preventDefault();toast(t('cvLinkHint'));},
   approve(el){const p=PENDING.find(x=>x.id===el.dataset.id);PENDING=PENDING.filter(x=>x!==p);render();toast(t('approvedA'));$('#view h1').focus();},
   reject(el){const id=el.dataset.id;const p=PENDING.find(x=>x.id===id);openDialog({title:t('rejectTitle'),confirm:t('reject'),danger:true,
