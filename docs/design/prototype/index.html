@@ -367,7 +367,7 @@ const T = {
   mobile:['رقم الجوال','Mobile number'],contactHint:['لا يراها صاحب العمل إلا بعد أن ترفع طلب اهتمام على فرصته.','Employers see these only after you express interest in their job.'],
   eduLevel:['المستوى التعليمي','Education level'],gradYear:['سنة التخرج','Graduation year'],inst:['الجهة التعليمية','Institution'],gradCountry:['دولة التخرج','Country of graduation'],
   hasExp:['هل لديك خبرة عمل سابقة؟','Do you have previous work experience?'],expYears:['عدد سنوات الخبرة','Years of experience'],
-  pos1:['المنصب 1','Position 1'],pos2:['المنصب 2','Position 2'],posTitle:['المسمى الوظيفي','Job title'],from:['من','From'],to:['إلى','To'],current:['ما زلت في هذا المنصب','I currently hold this position'],
+  pos:['المنصب {n}','Position {n}'],addPos:['أضف منصباً آخر','Add another position'],removePos:['حذف المنصب','Remove position'],posHint:['أضف كل المناصب التي شغلتها، ابدأ بالأحدث.','Add every position you have held, latest first.'],posTitle:['المسمى الوظيفي','Job title'],from:['من','From'],to:['إلى','To'],current:['ما زلت في هذا المنصب','I currently hold this position'],
   verifier:['جهة التواصل للتحقق من الخبرة','Experience verification contact'],verifierHint:['اسم ورقم أو بريد شخص يستطيع تأكيد خبرتك.','Name and phone or email of someone who can confirm your experience.'],
   cvTitle:['السيرة الذاتية','Your CV'],cvLead:['ارفع سيرتك لتحسين مطابقة الفرص.','Upload your CV to improve job matching.'],
   dropText:['اختر ملف السيرة','Choose your CV file'],dropHint:['PDF أو Word، بحد أقصى 10MB','PDF or Word, up to 10MB'],replace:['استبدال','Replace'],remove:['حذف','Remove'],uploaded:['تم الرفع','Uploaded'],
@@ -539,7 +539,7 @@ const S={lang:'ar',role:'seeker',screen:'S-01',step:1,jobId:1,seekerId:'s1',veri
   jobQ:'',jobSector:'',fitOnly:false,userQ:'',userRole:'',audit:{u:'',a:'',e:'',f:'',to:''},
   p:{first:['خالد','Khaled'],father:['عبدالله','Abdullah'],grand:['محمد','Mohammed'],family:['السالم','Al-Salem'],idType:'national',idNo:'1012345678',gender:'m',birth:'1998-04-12',nat:'SA',needs:'no',
      dar:'0',fakhdh:'0',phone:'0551234567',email:'khaled.salem@example.com',edu:'2',grad:'2020',inst:['جامعة الملك سعود','King Saud University'],gradC:'SA',
-     hasExp:'yes',years:'3',p1:{t:['محلل بيانات مساعد','Junior Data Analyst'],f:'2021-09',to:'2023-06'},p2:{t:['محلل تقارير','Reporting Analyst'],f:'2023-07',to:'',cur:true},
+     hasExp:'yes',years:'3',pos:[{t:['محلل تقارير','Reporting Analyst'],f:'2023-07',to:'',cur:true},{t:['محلل بيانات مساعد','Junior Data Analyst'],f:'2021-09',to:'2023-06'}],
      ver:['م. فهد الدوسري · 0509876543','Eng. Fahad Al-Dosari · 0509876543'],cv:null,cvSector:'0'},
   myReqs:[{job:4,d:'2026-10-16'},{job:8,d:'2026-09-12'}],
   newEmail:'khaled.salem@example.com',
@@ -689,11 +689,14 @@ const STEPS={
   5:()=>`${choices({name:'hasExp',legend:t('hasExp'),bind:'hasExp',rerender:true,options:[['yes',t('yes')],['no',t('no')]]})}
     ${S.p.hasExp==='yes'?`
     <div style="max-width:240px">${field({id:'w-years',label:t('expYears'),bind:'years',type:'number',cls:'ltr',attrs:'inputmode="numeric" min="0" max="50"'})}</div>
-    ${[1,2].map(n=>`<fieldset class="group"><legend>${t('pos'+n)}${n===2?` <span class="opt">(${t('optional')})</span>`:''}</legend>
-      ${field({id:`w-p${n}t`,label:t('posTitle'),bind:`p${n}.t`,req:n===1})}
-      <div class="grid-2">${field({id:`w-p${n}f`,label:t('from'),bind:`p${n}.f`,type:'month',req:n===1,cls:'ltr'})}
-      ${field({id:`w-p${n}to`,label:t('to'),bind:`p${n}.to`,type:'month',req:false,cls:'ltr',attrs:S.p['p'+n].cur?'disabled':''})}</div>
-      <label class="check"><input type="checkbox" data-bind="p${n}.cur" data-rerender="1" ${S.p['p'+n].cur?'checked':''}> ${t('current')}</label></fieldset>`).join('')}
+    <p class="small muted">${t('posHint')}</p>
+    ${S.p.pos.map((x,i)=>`<fieldset class="group"><legend>${t('pos',{n:i+1})}</legend>
+      ${field({id:`w-p${i}t`,label:t('posTitle'),bind:`pos.${i}.t`,req:true})}
+      <div class="grid-2">${field({id:`w-p${i}f`,label:t('from'),bind:`pos.${i}.f`,type:'month',req:true,cls:'ltr'})}
+      ${field({id:`w-p${i}to`,label:t('to'),bind:`pos.${i}.to`,type:'month',req:false,cls:'ltr',attrs:x.cur?'disabled':''})}</div>
+      <label class="check"><input type="checkbox" data-bind="pos.${i}.cur" data-rerender="1" ${x.cur?'checked':''}> ${t('current')}</label>
+      ${S.p.pos.length>1?`<div class="actions" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" data-act="posRemove" data-i="${i}">${icon('x')}${t('removePos')}</button></div>`:''}</fieldset>`).join('')}
+    <div class="actions" style="margin:0 0 16px"><button type="button" class="btn btn-secondary btn-sm" data-act="posAdd">${icon('plus')}${t('addPos')}</button></div>
     ${field({id:'w-ver',label:t('verifier'),bind:'ver',hint:t('verifierHint')})}`:''}`,
   6:()=>{const c=S.p.cv;const sec=S.p.cvSector;return `<p class="muted">${t('cvLead')}</p>
     ${c?`<div class="card file-row">${icon('file')}<span class="name">${esc(c.name)} <span class="small muted">· ${c.size}</span></span><span class="badge match">${icon('check')}${t('uploaded')}</span>
@@ -824,7 +827,7 @@ V['S-15']=()=>{const p=PEOPLE[S.seekerId];const a=(APPS[curJob().id]||[]).find(x
     <section class="card"><h2 class="section-title">${icon('cap')}${t('education')}</h2><dl class="kv">
       <dt>${t('eduLevel')}</dt><dd>${esc(lk('edu',p.edu))}</dd><dt>${t('inst')}</dt><dd>${esc(L(p.inst))}</dd><dt>${t('gradYear')}</dt><dd>${p.grad}</dd><dt>${t('gradCountry')}</dt><dd>${esc(L(COUNTRIES[p.gradC]))}</dd></dl></section>
     <section class="card"><h2 class="section-title">${icon('brief')}${t('experience')}</h2><dl class="kv"><dt>${t('expYears')}</dt><dd>${p.years}</dd>
-      ${p.pos.map((x,i)=>`<dt>${t('pos'+(i+1))}</dt><dd>${esc(L(x.t))}<br><span class="small muted">${fmtDate(x.f)} – ${x.to?fmtDate(x.to):t('currentNow')}</span></dd>`).join('')}
+      ${p.pos.map((x,i)=>`<dt>${t('pos',{n:i+1})}</dt><dd>${esc(L(x.t))}<br><span class="small muted">${fmtDate(x.f)} – ${x.to?fmtDate(x.to):t('currentNow')}</span></dd>`).join('')}
       <dt>${t('verifier')}</dt><dd>${esc(L(p.ver))}</dd></dl></section>
   </div><aside class="sticky">
     <section class="card"><h2 class="section-title">${icon('phone')}${t('contact')}</h2>
@@ -989,6 +992,8 @@ const SUBMIT={
   addLookup(f){const ar=f.querySelector('#lk-ar').value.trim(),en=f.querySelector('#lk-en').value.trim();LK[S.lookupTab].push([ar,en,1]);toast(t('addedToast'));render();$('#lk-ar').focus();},
 };
 const ACT={
+  posAdd(){S.p.pos.push({t:['',''],f:'',to:''});render();const el=$(`#w-p${S.p.pos.length-1}t`);if(el)el.focus();},
+  posRemove(a){S.p.pos.splice(+a.dataset.i,1);render();},
   lang(){S.lang=S.lang==='ar'?'en':'ar';render();$('#lang-btn').focus();},
   wizBack(){S.step--;go('S-05');},
   wizLater(){toast(t('laterToast'));go('S-07');},

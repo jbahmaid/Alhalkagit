@@ -539,7 +539,7 @@ model SeekerEducation {
   @@map("seeker_educations")
 }
 
-/// المناصب السابقة. FR-2.1.8 (منصب 1، 2، ... مع من تاريخ إلى تاريخ). end_date فارغ يعني "حتى الآن".
+/// المناصب السابقة، بلا حد أقصى. FR-2.1.8 (من تاريخ إلى تاريخ). end_date فارغ يعني "حتى الآن".
 model ExperiencePosition {
   id           String    @id @default(uuid()) @db.Uuid
   seekerId     String    @map("seeker_id") @db.Uuid
