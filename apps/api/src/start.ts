@@ -5,7 +5,8 @@
  *   2. wait for PostgreSQL;
  *   3. apply migrations (prisma migrate deploy). Only the api service migrates;
  *   4. run the idempotent seed (lookups, permissions, settings, admin account);
- *   5. start the HTTP server.
+ *   5. with SEED_DEMO=true, add the demo data (idempotent, see src/demo.ts);
+ *   6. start the HTTP server.
  */
 import 'reflect-metadata';
 import { spawnSync } from 'node:child_process';
@@ -69,6 +70,15 @@ async function main() {
       ...process.env,
       ADMIN_PASSWORD_FILE: process.env.ADMIN_PASSWORD_FILE || '/app/secrets/admin-initial-password.txt',
     });
+  }
+
+  if (process.env.SEED_DEMO === 'true') {
+    // Demo data is a convenience: a failure is reported but does not stop the platform.
+    try {
+      run('adding demo data (SEED_DEMO=true)', [join(__dirname, 'demo.js'), 'seed']);
+    } catch (err) {
+      log(`demo data was not added: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports

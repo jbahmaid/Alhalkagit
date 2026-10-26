@@ -133,6 +133,8 @@ services:
       ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
       SEED_ON_START: ${SEED_ON_START:-true}
       SEED_SAMPLE_TRIBE_DATA: ${SEED_SAMPLE_TRIBE_DATA:-true}
+      # Demo data for presentations (demo-only accounts, shared password; see README)
+      SEED_DEMO: ${SEED_DEMO:-false}
     volumes:
       - secrets:/app/secrets
     depends_on:
