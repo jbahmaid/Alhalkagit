@@ -97,13 +97,20 @@ export class EmployersService {
     return new Map(rows.map((r) => [r.jobId, r._count._all]));
   }
 
-  private async validateJob(dto: JobInputDto): Promise<void> {
+  /** Lookups must be active, except the value the job already has (deactivated later, S-19). */
+  private async validateJob(dto: JobInputDto, current?: Job): Promise<void> {
     const errors: FieldErrorDetail[] = [];
+    const active = (id: string, kept: string | null | undefined) => ({
+      id,
+      ...(id === kept ? {} : { isActive: true }),
+    });
     const [sector, country, level] = await Promise.all([
-      this.db.sector.count({ where: { id: dto.sectorId, isActive: true } }),
-      this.db.country.count({ where: { id: dto.countryId, isActive: true } }),
+      this.db.sector.count({ where: active(dto.sectorId, current?.sectorId) }),
+      this.db.country.count({ where: active(dto.countryId, current?.countryId) }),
       dto.requiredEducationLevelId
-        ? this.db.educationLevel.count({ where: { id: dto.requiredEducationLevelId, isActive: true } })
+        ? this.db.educationLevel.count({
+            where: active(dto.requiredEducationLevelId, current?.requiredEducationLevelId),
+          })
         : Promise.resolve(1),
     ]);
     if (!sector) errors.push({ field: 'sectorId', errors: ['LOOKUP_INVALID'] });
@@ -145,7 +152,7 @@ export class EmployersService {
     this.requireApproved(employer);
     const job = await this.ownJob(employer, jobId);
     if (job.status !== 'OPEN') throw Errors.conflict('JOB_CLOSED');
-    await this.validateJob(dto);
+    await this.validateJob(dto, job);
     const changes = changedFields(job, this.jobData(dto));
     const saved = Object.keys(changes).length
       ? await this.db.job.update({ where: { id: job.id }, data: changes })

@@ -228,6 +228,17 @@ describe('Employer approval and own jobs', () => {
     ).toBe('VALIDATION_FAILED');
   });
 
+  it('an edit keeps a sector deactivated since, but a new job needs an active one', async () => {
+    const c = await setup();
+    const e = await c.employer(true, 'ok');
+    const job = await c.employers.createJob(e.user.id, c.jobInput());
+    c.db.sector.rows.find((s: any) => s.id === c.it.id).isActive = false;
+    expect(
+      await code(c.employers.updateJob(e.user.id, job.id, c.jobInput({ title: 'Senior analyst' }))),
+    ).toBe('OK');
+    expect(await code(c.employers.createJob(e.user.id, c.jobInput()))).toBe('VALIDATION_FAILED');
+  });
+
   it("cannot read, edit, close or list applicants of another employer's job", async () => {
     const c = await setup();
     const a = await c.employer(true, 'a');
