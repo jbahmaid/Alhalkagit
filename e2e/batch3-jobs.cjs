@@ -385,6 +385,13 @@ function watch(page, label) {
       const iFar = titles.indexOf(farTitle);
       assert(iFit >= 0 && iFar > iFit, `order: ${titles.join(' | ')}`);
       const fitCard = sp.locator('[role=article]', { has: sp.locator(`h2:text-is("${fitTitle}")`) });
+      // Scores stored while the profile was incomplete are recomputed by the worker a few
+      // seconds after "finish" (debounced); until then the list shows the stored ones.
+      for (let i = 0; i < 10 && !(await fitCard.locator('span.rounded-pill').count()); i++) {
+        await wait(2000);
+        await sp.reload();
+        await sp.waitForSelector(`h2:has-text("${fitTitle}")`);
+      }
       const badge = (await fitCard.locator('span.rounded-pill').first().textContent()).replace(/\s+/g, ' ');
       assert(/مناسبة · درجة الملاءمة \d+/.test(badge), `badge "${badge}"`);
       const score = Number(/(\d+)$/.exec(badge.trim())[1]);
