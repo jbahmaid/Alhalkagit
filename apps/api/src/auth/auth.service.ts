@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AuditAction, User, UserRole, UserStatus, VerificationPurpose } from '@prisma/client';
 import {
+  FieldErrorDetail,
   LOGIN_LOCK_MINUTES,
   LOGIN_MAX_FAILED_ATTEMPTS,
   MeDto,
+  normalizePhone,
   OTP_RESEND_COOLDOWN_SECONDS,
   PendingVerificationDto,
   RefreshResultDto,
@@ -17,7 +19,7 @@ import { AppConfig } from '../config/app-config';
 import { APP_CONFIG } from '../config/config.module';
 import { EmailQueueService } from '../notifications/email-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ChangePasswordDto, LoginDto, ResetPasswordDto, SignupSeekerDto } from './dto/auth.dto';
+import { ChangePasswordDto, LoginDto, ResetPasswordDto, SignupEmployerDto, SignupSeekerDto } from './dto/auth.dto';
 import { OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { PermissionsService } from './permissions.service';
@@ -97,6 +99,71 @@ export class AuthService {
           },
         });
         await tx.seekerProfile.create({ data: { userId, shareConsentAt: new Date() } });
+        return created;
+      }),
+    );
+    return this.sendVerificationCode(user, { ignoreCooldown: true });
+  }
+
+  /**
+   * Employer sign-up (S-10, FR-2.2.1): user (EMPLOYER, pending verification) plus the employer
+   * row in PENDING approval. Verification uses the same code flow as seekers; posting jobs
+   * waits for an admin's approval (enforced in EmployersService).
+   */
+  async signupEmployer(dto: SignupEmployerDto): Promise<PendingVerificationDto> {
+    const errors: FieldErrorDetail[] = [];
+    const phone = normalizePhone(dto.phone);
+    if (!phone) errors.push({ field: 'phone', errors: ['PHONE_FORMAT'] });
+    const [sector, businessType] = await Promise.all([
+      this.prisma.db.sector.count({ where: { id: dto.sectorId, isActive: true } }),
+      this.prisma.db.businessType.count({ where: { id: dto.businessTypeId, isActive: true } }),
+    ]);
+    if (!sector) errors.push({ field: 'sectorId', errors: ['LOOKUP_INVALID'] });
+    if (!businessType) errors.push({ field: 'businessTypeId', errors: ['LOOKUP_INVALID'] });
+    if (errors.length) throw Errors.validation(errors);
+
+    const locale = dto.locale ?? 'ar';
+    const passwordHash = await this.passwords.hash(dto.password);
+    const employerData = {
+      contactName: dto.contactName,
+      organizationName: dto.organizationName,
+      sectorId: dto.sectorId,
+      businessTypeId: dto.businessTypeId,
+      email: dto.email,
+      phone: phone!,
+    };
+    const existing = await this.prisma.db.user.findFirst({ where: { email: dto.email, deletedAt: undefined } });
+    if (existing) {
+      if (
+        existing.status !== UserStatus.PENDING_VERIFICATION ||
+        existing.role !== UserRole.EMPLOYER ||
+        existing.deletedAt
+      ) {
+        throw Errors.conflict('AUTH_EMAIL_TAKEN');
+      }
+      await this.prisma.runAs({ userId: existing.id, role: existing.role }, () =>
+        this.prisma.tx(async (tx) => {
+          await tx.user.update({ where: { id: existing.id }, data: { passwordHash, locale } });
+          await tx.employer.updateMany({ where: { userId: existing.id }, data: employerData });
+        }),
+      );
+      return this.sendVerificationCode({ ...existing, locale }, { ignoreCooldown: true });
+    }
+
+    const userId = randomUUID();
+    const user = await this.prisma.runAs({ userId, role: UserRole.EMPLOYER }, () =>
+      this.prisma.tx(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            id: userId,
+            email: dto.email,
+            passwordHash,
+            role: UserRole.EMPLOYER,
+            status: UserStatus.PENDING_VERIFICATION,
+            locale,
+          },
+        });
+        await tx.employer.create({ data: { ...employerData, userId } });
         return created;
       }),
     );
@@ -396,13 +463,16 @@ export class AuthService {
   async me(userId: string): Promise<MeDto> {
     const user = await this.prisma.db.user.findUnique({
       where: { id: userId },
-      include: { person: { select: { firstName: true, familyName: true } } },
+      include: {
+        person: { select: { firstName: true, familyName: true } },
+        employer: { select: { contactName: true } },
+      },
     });
     if (!user) throw Errors.unauthenticated();
     const perms = await this.permissions.effective(user.id, user.role);
     const displayName = user.person
       ? `${user.person.firstName} ${user.person.familyName}`
-      : (user.username ?? user.email.split('@')[0]);
+      : (user.employer?.contactName ?? user.username ?? user.email.split('@')[0]);
     return {
       id: user.id,
       email: user.email,

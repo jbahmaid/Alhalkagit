@@ -2,6 +2,8 @@ import { Transform } from 'class-transformer';
 import {
   Equals,
   IsEmail,
+  IsNotEmpty,
+  IsUUID,
   IsIn,
   IsOptional,
   IsString,
@@ -11,7 +13,7 @@ import {
   registerDecorator,
   ValidationOptions,
 } from 'class-validator';
-import { checkPassword, OTP_LENGTH, PASSWORD_MAX_LENGTH } from '@sanad/shared';
+import { checkPassword, JOB_LIMITS, OTP_LENGTH, PASSWORD_MAX_LENGTH } from '@sanad/shared';
 
 const lowerTrim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
@@ -39,6 +41,19 @@ export class SignupSeekerDto {
   @IsString() @IsPasswordPolicy() password!: string;
   /** Explicit consent to share the profile with an employer upon an interest request. */
   @Equals(true) consentShare!: boolean;
+  @Equals(true) consentTerms!: boolean;
+  @IsOptional() @IsIn(['ar', 'en']) locale?: 'ar' | 'en';
+}
+
+/** S-10 employer sign-up (FR-2.2.1). The business type is required. */
+export class SignupEmployerDto {
+  @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(JOB_LIMITS.nameMax) contactName!: string;
+  @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(JOB_LIMITS.nameMax) organizationName!: string;
+  @IsUUID() sectorId!: string;
+  @IsUUID() businessTypeId!: string;
+  @Transform(lowerTrim) @IsEmail() @MaxLength(254) email!: string;
+  @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(30) phone!: string;
+  @IsString() @IsPasswordPolicy() password!: string;
   @Equals(true) consentTerms!: boolean;
   @IsOptional() @IsIn(['ar', 'en']) locale?: 'ar' | 'en';
 }
