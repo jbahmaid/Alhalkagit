@@ -11,19 +11,23 @@ export const ROLE_NAV: Record<'SEEKER' | 'EMPLOYER' | 'ADMIN', NavItem[]> = {
     { href: '/seeker/jobs', labelKey: 'jobs', enabled: true },
     { href: '/seeker/requests', labelKey: 'myRequests', enabled: true },
     { href: '/seeker/profile', labelKey: 'myProfile', enabled: true },
+    { href: '/account', labelKey: 'account', enabled: true },
   ],
   EMPLOYER: [
     { href: '/employer', labelKey: 'dashboard', enabled: true },
     { href: '/employer/jobs/new', labelKey: 'postJob', enabled: true },
     { href: '/employer/reports', labelKey: 'reports', enabled: false },
+    { href: '/account', labelKey: 'account', enabled: true },
   ],
   ADMIN: [
     { href: '/admin', labelKey: 'overview', enabled: true },
-    { href: '/admin/approvals', labelKey: 'approvals', enabled: false },
-    { href: '/admin/lookups', labelKey: 'lookups', enabled: false },
-    { href: '/admin/users', labelKey: 'users', enabled: false },
-    { href: '/admin/audit', labelKey: 'audit', enabled: false },
+    { href: '/admin/approvals', labelKey: 'approvals', enabled: true },
+    { href: '/admin/lookups', labelKey: 'lookups', enabled: true },
+    { href: '/admin/users', labelKey: 'users', enabled: true },
+    { href: '/admin/audit', labelKey: 'audit', enabled: true },
+    { href: '/admin/settings', labelKey: 'settings', enabled: true },
     { href: '/admin/reports', labelKey: 'reports', enabled: false },
+    { href: '/account', labelKey: 'account', enabled: true },
   ],
 };
 

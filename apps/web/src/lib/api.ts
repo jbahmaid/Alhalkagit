@@ -113,3 +113,32 @@ export async function upload<T>(
   const fallback = res.status === 413 ? 'FILE_TOO_LARGE' : res.status >= 500 ? 'INTERNAL_ERROR' : 'FORBIDDEN';
   throw new ApiError(res.status, err.code ?? fallback, err.details);
 }
+
+/**
+ * POSTs to an endpoint that answers with a file (the Excel export) and saves it through a
+ * temporary object URL. Errors come back as JSON and are thrown as ApiError, like `api`.
+ */
+export async function download(path: string, body: unknown, fallbackName: string): Promise<void> {
+  let res = await send(path, { method: 'POST', body }, getAccessToken());
+  if (res.status === 401 && (await refreshSession()))
+    res = await send(path, { method: 'POST', body }, getAccessToken());
+  if (!res.ok) {
+    const err = ((await res.json().catch(() => null)) ?? {}) as Partial<ApiErrorBody>;
+    throw new ApiError(
+      res.status,
+      err.code ?? (res.status >= 500 ? 'INTERNAL_ERROR' : 'FORBIDDEN'),
+      err.details,
+    );
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get('content-disposition') ?? '';
+  const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

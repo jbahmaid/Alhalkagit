@@ -34,6 +34,11 @@ const RULE_KEYS: Record<string, string> = {
   FAKHDH_DAR_MISMATCH: 'fakhdhDar',
   PHONE_FORMAT: 'phone',
   CONTACT_REQUIRED: 'contactRequired',
+  LOOKUP_CODE_TAKEN: 'codeTaken',
+  LOOKUP_RANK_TAKEN: 'rankTaken',
+  USERNAME_TAKEN: 'usernameTaken',
+  WEIGHTS_SUM: 'weightsSum',
+  THRESHOLD_ORDER: 'thresholdOrder',
 };
 
 /** `matches` means "6-digit code" on the code field and "wrong format" anywhere else. */
