@@ -50,7 +50,9 @@ describe('scoreMatch: weights 40 / 25 / 25 / 10', () => {
     expect(scoreMatch(seeker({ educationRank: 2 }), job()).score).toBe(75);
     expect(scoreMatch(seeker({ years: 2 }), job()).score).toBe(75);
     expect(scoreMatch(seeker({ keywordSources: [] }), job()).score).toBe(90);
-    expect(scoreMatch(seeker({ sectorIds: [], educationRank: null, years: 0, keywordSources: [] }), job()).score).toBe(0);
+    expect(
+      scoreMatch(seeker({ sectorIds: [], educationRank: null, years: 0, keywordSources: [] }), job()).score,
+    ).toBe(0);
   });
 
   it('labels with the thresholds: >=70 suitable, >=45 near, otherwise none', () => {
@@ -63,26 +65,56 @@ describe('scoreMatch: weights 40 / 25 / 25 / 10', () => {
   });
 
   it('treats the boundaries as inclusive (70 and 45)', () => {
-    const s = { ...DEFAULT_MATCH_SETTINGS, weights: { sector: 45, education: 25, experience: 0, keywords: 30 } };
+    const s = {
+      ...DEFAULT_MATCH_SETTINGS,
+      weights: { sector: 45, education: 25, experience: 0, keywords: 30 },
+    };
     // sector+education = 70 of 100
-    expect(scoreMatch(seeker({ keywordSources: [] }), job(), s)).toMatchObject({ score: 70, label: 'SUITABLE' });
-    const n = { ...DEFAULT_MATCH_SETTINGS, weights: { sector: 45, education: 0, experience: 0, keywords: 55 } };
+    expect(scoreMatch(seeker({ keywordSources: [] }), job(), s)).toMatchObject({
+      score: 70,
+      label: 'SUITABLE',
+    });
+    const n = {
+      ...DEFAULT_MATCH_SETTINGS,
+      weights: { sector: 45, education: 0, experience: 0, keywords: 55 },
+    };
     expect(scoreMatch(seeker({ keywordSources: [] }), job(), n)).toMatchObject({ score: 45, label: 'NEAR' });
-    const below = { ...DEFAULT_MATCH_SETTINGS, weights: { sector: 44, education: 0, experience: 0, keywords: 56 } };
-    expect(scoreMatch(seeker({ keywordSources: [] }), job(), below)).toMatchObject({ score: 44, label: 'NONE' });
+    const below = {
+      ...DEFAULT_MATCH_SETTINGS,
+      weights: { sector: 44, education: 0, experience: 0, keywords: 56 },
+    };
+    expect(scoreMatch(seeker({ keywordSources: [] }), job(), below)).toMatchObject({
+      score: 44,
+      label: 'NONE',
+    });
   });
 
   it('education: no requirement is always met; higher rank meets a lower requirement; unknown never does', () => {
-    expect(scoreMatch(seeker({ educationRank: null }), job({ requiredEducationRank: null })).breakdown.educationMet).toBe(true);
-    expect(scoreMatch(seeker({ educationRank: 5 }), job({ requiredEducationRank: 3 })).breakdown.educationMet).toBe(true);
-    expect(scoreMatch(seeker({ educationRank: 3 }), job({ requiredEducationRank: 3 })).breakdown.educationMet).toBe(true);
-    expect(scoreMatch(seeker({ educationRank: null }), job({ requiredEducationRank: 1 })).breakdown.educationMet).toBe(false);
+    expect(
+      scoreMatch(seeker({ educationRank: null }), job({ requiredEducationRank: null })).breakdown
+        .educationMet,
+    ).toBe(true);
+    expect(
+      scoreMatch(seeker({ educationRank: 5 }), job({ requiredEducationRank: 3 })).breakdown.educationMet,
+    ).toBe(true);
+    expect(
+      scoreMatch(seeker({ educationRank: 3 }), job({ requiredEducationRank: 3 })).breakdown.educationMet,
+    ).toBe(true);
+    expect(
+      scoreMatch(seeker({ educationRank: null }), job({ requiredEducationRank: 1 })).breakdown.educationMet,
+    ).toBe(false);
   });
 
   it('experience: zero required is always met, equal is met, fewer is not', () => {
-    expect(scoreMatch(seeker({ years: 0 }), job({ minYearsExperience: 0 })).breakdown.experienceMet).toBe(true);
-    expect(scoreMatch(seeker({ years: 3 }), job({ minYearsExperience: 3 })).breakdown.experienceMet).toBe(true);
-    expect(scoreMatch(seeker({ years: 2 }), job({ minYearsExperience: 3 })).breakdown.experienceMet).toBe(false);
+    expect(scoreMatch(seeker({ years: 0 }), job({ minYearsExperience: 0 })).breakdown.experienceMet).toBe(
+      true,
+    );
+    expect(scoreMatch(seeker({ years: 3 }), job({ minYearsExperience: 3 })).breakdown.experienceMet).toBe(
+      true,
+    );
+    expect(scoreMatch(seeker({ years: 2 }), job({ minYearsExperience: 3 })).breakdown.experienceMet).toBe(
+      false,
+    );
   });
 
   it('sector: any of the seeker sectors counts', () => {
@@ -97,9 +129,15 @@ describe('scoreMatch: weights 40 / 25 / 25 / 10', () => {
   });
 
   it('scales to 0..100 when admin weights do not sum to 100', () => {
-    const s = { ...DEFAULT_MATCH_SETTINGS, weights: { sector: 20, education: 20, experience: 0, keywords: 0 } };
+    const s = {
+      ...DEFAULT_MATCH_SETTINGS,
+      weights: { sector: 20, education: 20, experience: 0, keywords: 0 },
+    };
     expect(scoreMatch(seeker({ educationRank: 1 }), job(), s).score).toBe(50);
-    const zero = { ...DEFAULT_MATCH_SETTINGS, weights: { sector: 0, education: 0, experience: 0, keywords: 0 } };
+    const zero = {
+      ...DEFAULT_MATCH_SETTINGS,
+      weights: { sector: 0, education: 0, experience: 0, keywords: 0 },
+    };
     expect(scoreMatch(seeker(), job(), zero).score).toBe(0);
   });
 
@@ -111,7 +149,9 @@ describe('scoreMatch: weights 40 / 25 / 25 / 10', () => {
       );
       expect(r.score).toBeGreaterThanOrEqual(0);
       expect(r.score).toBeLessThanOrEqual(100);
-      expect(r.score).toBe(r.breakdown.sector + r.breakdown.education + r.breakdown.experience + r.breakdown.keywords);
+      expect(r.score).toBe(
+        r.breakdown.sector + r.breakdown.education + r.breakdown.experience + r.breakdown.keywords,
+      );
     }
   });
 });
@@ -142,7 +182,10 @@ describe('keywords (Arabic and English)', () => {
 describe('parseMatchSettings', () => {
   it('reads valid settings', () => {
     expect(
-      parseMatchSettings({ sector: 50, education: 20, experience: 20, keywords: 10 }, { suitable: 80, near: 50 }),
+      parseMatchSettings(
+        { sector: 50, education: 20, experience: 20, keywords: 10 },
+        { suitable: 80, near: 50 },
+      ),
     ).toEqual({
       weights: { sector: 50, education: 20, experience: 20, keywords: 10 },
       thresholds: { suitable: 80, near: 50 },
@@ -175,10 +218,9 @@ describe('seekerFacts', () => {
   };
 
   it('collects the CV-analysis sector and the position sectors, without duplicates', () => {
-    expect(seekerFacts({ ...base, analysisSectorId: IT, positionSectorIds: [IT, FIN, null] }).sectorIds).toEqual([
-      IT,
-      FIN,
-    ]);
+    expect(
+      seekerFacts({ ...base, analysisSectorId: IT, positionSectorIds: [IT, FIN, null] }).sectorIds,
+    ).toEqual([IT, FIN]);
     expect(seekerFacts(base).sectorIds).toEqual([]);
   });
 

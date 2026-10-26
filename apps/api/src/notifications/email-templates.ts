@@ -56,7 +56,11 @@ function body(job: EmailJob, t: (typeof DICT)['ar']): Body {
       return {
         subject: s.subject,
         heading: fill(s.heading, job.vars),
-        paragraphs: [s.intro, ...(job.vars.reason ? [`${s.reasonLabel}: ${job.vars.reason}`] : []), s.contact],
+        paragraphs: [
+          s.intro,
+          ...(job.vars.reason ? [`${s.reasonLabel}: ${job.vars.reason}`] : []),
+          s.contact,
+        ],
         footer: t.noticeFooter,
       };
     }

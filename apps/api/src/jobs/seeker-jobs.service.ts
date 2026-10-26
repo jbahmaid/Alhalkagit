@@ -50,7 +50,10 @@ export class SeekerJobsService {
     const jobs = rows as SeekerJobRow[];
     const [scores, interests] = await Promise.all([
       this.matching.scoresForSeeker(profile.id, jobs),
-      this.interestsFor(profile.id, jobs.map((j) => j.id)),
+      this.interestsFor(
+        profile.id,
+        jobs.map((j) => j.id),
+      ),
     ]);
     let items = jobs.map((j) => new SeekerJobView(j, scores.get(j.id)!, interests.get(j.id)));
     if (q.fit) items = items.filter((j) => j.match.label !== 'NONE');
@@ -66,9 +69,10 @@ export class SeekerJobsService {
   /** S-08. A closed job stays visible only to seekers who expressed interest in it. */
   async detail(userId: string, jobId: string): Promise<SeekerJobDto> {
     const profile = await this.profileOf(userId);
-    const job = (await this.db.job.findFirst({ where: { id: jobId }, select: SEEKER_JOB_SELECT })) as
-      | SeekerJobRow
-      | null;
+    const job = (await this.db.job.findFirst({
+      where: { id: jobId },
+      select: SEEKER_JOB_SELECT,
+    })) as SeekerJobRow | null;
     const interest = job ? (await this.interestsFor(profile.id, [job.id])).get(job.id) : undefined;
     if (!job || (job.status !== 'OPEN' && !interest)) throw Errors.notFound('JOB_NOT_AVAILABLE');
     const scores = await this.matching.scoresForSeeker(profile.id, [job]);
@@ -107,7 +111,10 @@ export class SeekerJobsService {
 
   /** Employer-side lookup kept inside this method: nothing from it reaches the seeker. */
   private async notifyEmployer(jobId: string): Promise<void> {
-    const job = await this.db.job.findFirst({ where: { id: jobId }, select: { title: true, employerId: true } });
+    const job = await this.db.job.findFirst({
+      where: { id: jobId },
+      select: { title: true, employerId: true },
+    });
     if (!job) return;
     const employer = await this.db.employer.findFirst({
       where: { id: job.employerId },
@@ -119,7 +126,10 @@ export class SeekerJobsService {
       template: 'newInterest',
       to: employer.email,
       locale,
-      vars: { jobTitle: job.title, link: `${this.config.publicUrl}/${locale}/employer/jobs/${jobId}/applicants` },
+      vars: {
+        jobTitle: job.title,
+        link: `${this.config.publicUrl}/${locale}/employer/jobs/${jobId}/applicants`,
+      },
     });
   }
 

@@ -101,8 +101,14 @@ export class MatchingService {
           yearsOfExperience: p.yearsOfExperience,
           inferredYears: a?.inferredYears ?? null,
           positionTitles: pos.map((x) => x.title),
-          fieldOfStudy: eds.map((e) => e.fieldOfStudy).filter(Boolean).join(' ') || best.field,
-          skills: Array.isArray(a?.skills) ? (a!.skills as unknown[]).filter((s): s is string => typeof s === 'string') : [],
+          fieldOfStudy:
+            eds
+              .map((e) => e.fieldOfStudy)
+              .filter(Boolean)
+              .join(' ') || best.field,
+          skills: Array.isArray(a?.skills)
+            ? (a!.skills as unknown[]).filter((s): s is string => typeof s === 'string')
+            : [],
         }),
       );
     }
@@ -117,7 +123,9 @@ export class MatchingService {
         j.id,
         {
           sectorId: j.sectorId,
-          requiredEducationRank: j.requiredEducationLevelId ? (rank.get(j.requiredEducationLevelId) ?? null) : null,
+          requiredEducationRank: j.requiredEducationLevelId
+            ? (rank.get(j.requiredEducationLevelId) ?? null)
+            : null,
           minYearsExperience: j.minYearsExperience,
           title: j.title,
         },
@@ -161,11 +169,17 @@ export class MatchingService {
   async scoresForJob(job: JobRow, seekerIds: string[]): Promise<Map<string, MatchDto>> {
     const out = new Map<string, MatchDto>();
     if (!seekerIds.length) return out;
-    const stored = await this.db.matchScore.findMany({ where: { jobId: job.id, seekerId: { in: seekerIds } } });
+    const stored = await this.db.matchScore.findMany({
+      where: { jobId: job.id, seekerId: { in: seekerIds } },
+    });
     for (const s of stored) out.set(s.seekerId, toMatchDto(s));
     const missing = seekerIds.filter((id) => !out.has(id));
     if (missing.length) {
-      const [facts, jf, settings] = await Promise.all([this.seekerFacts(missing), this.jobFacts([job]), this.settings()]);
+      const [facts, jf, settings] = await Promise.all([
+        this.seekerFacts(missing),
+        this.jobFacts([job]),
+        this.settings(),
+      ]);
       for (const id of missing) {
         const sf = facts.get(id);
         out.set(id, sf ? scoreMatch(sf, jf.get(job.id)!, settings) : emptyResult());
@@ -176,8 +190,15 @@ export class MatchingService {
 
   /** Worker: recompute one seeker against every open job. Returns how many rows changed. */
   async recomputeSeeker(seekerId: string): Promise<number> {
-    const jobs = await this.db.job.findMany({ where: { status: 'OPEN' }, select: MatchingService.JOB_SELECT });
-    const [facts, jf, settings] = await Promise.all([this.seekerFacts([seekerId]), this.jobFacts(jobs), this.settings()]);
+    const jobs = await this.db.job.findMany({
+      where: { status: 'OPEN' },
+      select: MatchingService.JOB_SELECT,
+    });
+    const [facts, jf, settings] = await Promise.all([
+      this.seekerFacts([seekerId]),
+      this.jobFacts(jobs),
+      this.settings(),
+    ]);
     const sf = facts.get(seekerId);
     if (!sf) return 0;
     const results = jobs.map((j) => ({ seekerId, jobId: j.id, r: scoreMatch(sf, jf.get(j.id)!, settings) }));
@@ -186,11 +207,21 @@ export class MatchingService {
 
   /** Worker: recompute one job against every seeker who has started a profile. */
   async recomputeJob(jobId: string): Promise<number> {
-    const job = await this.db.job.findFirst({ where: { id: jobId, status: 'OPEN' }, select: MatchingService.JOB_SELECT });
+    const job = await this.db.job.findFirst({
+      where: { id: jobId, status: 'OPEN' },
+      select: MatchingService.JOB_SELECT,
+    });
     if (!job) return 0;
-    const seekers = await this.db.seekerProfile.findMany({ where: { personId: { not: null } }, select: { id: true } });
+    const seekers = await this.db.seekerProfile.findMany({
+      where: { personId: { not: null } },
+      select: { id: true },
+    });
     const ids = seekers.map((s) => s.id);
-    const [facts, jf, settings] = await Promise.all([this.seekerFacts(ids), this.jobFacts([job]), this.settings()]);
+    const [facts, jf, settings] = await Promise.all([
+      this.seekerFacts(ids),
+      this.jobFacts([job]),
+      this.settings(),
+    ]);
     const results = ids
       .filter((id) => facts.has(id))
       .map((id) => ({ seekerId: id, jobId, r: scoreMatch(facts.get(id)!, jf.get(jobId)!, settings) }));
@@ -211,7 +242,8 @@ export class MatchingService {
     for (const { seekerId, jobId, r } of results) {
       const cur = byPair.get(`${seekerId}:${jobId}`);
       const breakdown = r.breakdown as unknown as Prisma.InputJsonValue;
-      if (cur && cur.score === r.score && cur.label === r.label && sameJson(cur.breakdown, r.breakdown)) continue;
+      if (cur && cur.score === r.score && cur.label === r.label && sameJson(cur.breakdown, r.breakdown))
+        continue;
       changed += 1;
       if (cur) {
         await this.db.matchScore.update({
@@ -219,7 +251,9 @@ export class MatchingService {
           data: { score: r.score, label: r.label, breakdown, computedAt: new Date() },
         });
       } else {
-        await this.db.matchScore.create({ data: { seekerId, jobId, score: r.score, label: r.label, breakdown } });
+        await this.db.matchScore.create({
+          data: { seekerId, jobId, score: r.score, label: r.label, breakdown },
+        });
       }
     }
     if (changed) this.logger.debug(`match_scores: ${changed} row(s) updated for ${JSON.stringify(scope)}`);

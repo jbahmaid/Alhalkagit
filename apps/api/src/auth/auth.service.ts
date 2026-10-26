@@ -19,7 +19,13 @@ import { AppConfig } from '../config/app-config';
 import { APP_CONFIG } from '../config/config.module';
 import { EmailQueueService } from '../notifications/email-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ChangePasswordDto, LoginDto, ResetPasswordDto, SignupEmployerDto, SignupSeekerDto } from './dto/auth.dto';
+import {
+  ChangePasswordDto,
+  LoginDto,
+  ResetPasswordDto,
+  SignupEmployerDto,
+  SignupSeekerDto,
+} from './dto/auth.dto';
 import { OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { PermissionsService } from './permissions.service';
@@ -132,7 +138,9 @@ export class AuthService {
       email: dto.email,
       phone: phone!,
     };
-    const existing = await this.prisma.db.user.findFirst({ where: { email: dto.email, deletedAt: undefined } });
+    const existing = await this.prisma.db.user.findFirst({
+      where: { email: dto.email, deletedAt: undefined },
+    });
     if (existing) {
       if (
         existing.status !== UserStatus.PENDING_VERIFICATION ||

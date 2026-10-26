@@ -9,7 +9,12 @@ export type EmailJob =
   /** FR-2.2.2: the admin approved the employer account. */
   | { template: 'employerApproved'; to: string; locale: Locale; vars: { name: string; link: string } }
   /** FR-2.2.2: the admin rejected it; the reason is optional. */
-  | { template: 'employerRejected'; to: string; locale: Locale; vars: { name: string; reason: string | null } }
+  | {
+      template: 'employerRejected';
+      to: string;
+      locale: Locale;
+      vars: { name: string; reason: string | null };
+    }
   /**
    * FR-2.3.3: a seeker expressed interest in the employer's job. Carries only the job title and
    * a link to the applicants page: never the seeker's ID number, dar or fakhdh.

@@ -189,7 +189,13 @@ export function createFakePrisma() {
     educationLevel: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
     businessType: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
     employer: new FakeTable(
-      () => ({ deletedAt: null, approvalStatus: 'PENDING', approvedAt: null, approvedById: null, rejectionReason: null }),
+      () => ({
+        deletedAt: null,
+        approvalStatus: 'PENDING',
+        approvedAt: null,
+        approvedById: null,
+        rejectionReason: null,
+      }),
       true,
     ),
     job: new FakeTable(

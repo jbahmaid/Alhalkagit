@@ -48,7 +48,12 @@ export class AdminEmployersService {
     const updated = await this.prisma.tx(async () => {
       const row = await this.db.employer.update({
         where: { id },
-        data: { approvalStatus: 'APPROVED', approvedById: adminId, approvedAt: new Date(), rejectionReason: null },
+        data: {
+          approvalStatus: 'APPROVED',
+          approvedById: adminId,
+          approvedAt: new Date(),
+          rejectionReason: null,
+        },
       });
       await this.audit.record(AuditAction.APPROVE, 'employers', id, { approvalStatus: 'APPROVED' });
       return row;
@@ -71,7 +76,10 @@ export class AdminEmployersService {
         where: { id },
         data: { approvalStatus: 'REJECTED', rejectionReason: reason ?? null },
       });
-      await this.audit.record(AuditAction.REJECT, 'employers', id, { approvalStatus: 'REJECTED', reason: reason ?? null });
+      await this.audit.record(AuditAction.REJECT, 'employers', id, {
+        approvalStatus: 'REJECTED',
+        reason: reason ?? null,
+      });
       return row;
     });
     await this.email.enqueue({

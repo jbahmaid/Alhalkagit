@@ -133,10 +133,7 @@ export class EmployerController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Post('applicants/:interestId/cv-link')
   @HttpCode(200)
-  cvLink(
-    @CurrentUser() user: AuthUser,
-    @Param('interestId', uuid) interestId: string,
-  ): Promise<FileLinkDto> {
+  cvLink(@CurrentUser() user: AuthUser, @Param('interestId', uuid) interestId: string): Promise<FileLinkDto> {
     return this.employers.applicantCvLink(user.id, interestId);
   }
 }

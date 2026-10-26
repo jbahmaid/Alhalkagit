@@ -5,7 +5,14 @@ import type { CvAnalysisStatus, Gender } from './profile';
 // Enums (mirror apps/api/prisma/schema.prisma)
 // ---------------------------------------------------------------------------
 
-export const EMPLOYMENT_TYPES = ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'TEMPORARY', 'INTERNSHIP', 'FREELANCE'] as const;
+export const EMPLOYMENT_TYPES = [
+  'FULL_TIME',
+  'PART_TIME',
+  'CONTRACT',
+  'TEMPORARY',
+  'INTERNSHIP',
+  'FREELANCE',
+] as const;
 export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number];
 
 export type JobStatus = 'OPEN' | 'UNAVAILABLE';

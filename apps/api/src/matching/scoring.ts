@@ -160,7 +160,11 @@ export function keywordShare(jobTitle: string, seekerSources: string[]): number 
 // ---------------------------------------------------------------------------
 
 /** Score 0..100 with its breakdown and label. */
-export function scoreMatch(seeker: SeekerFacts, job: JobFacts, settings: MatchSettings = DEFAULT_MATCH_SETTINGS): MatchResult {
+export function scoreMatch(
+  seeker: SeekerFacts,
+  job: JobFacts,
+  settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
+): MatchResult {
   const { weights, thresholds } = settings;
   const sectorMatch = seeker.sectorIds.includes(job.sectorId);
   const educationMet =
@@ -201,12 +205,15 @@ export function seekerFacts(input: {
   const sectors = new Set<string>();
   if (input.analysisSectorId) sectors.add(input.analysisSectorId);
   for (const s of input.positionSectorIds) if (s) sectors.add(s);
-  const years =
-    input.hasExperience === false ? 0 : (input.yearsOfExperience ?? input.inferredYears ?? 0);
+  const years = input.hasExperience === false ? 0 : (input.yearsOfExperience ?? input.inferredYears ?? 0);
   return {
     sectorIds: [...sectors],
     educationRank: input.educationRank,
     years,
-    keywordSources: [...input.positionTitles, ...(input.fieldOfStudy ? [input.fieldOfStudy] : []), ...input.skills],
+    keywordSources: [
+      ...input.positionTitles,
+      ...(input.fieldOfStudy ? [input.fieldOfStudy] : []),
+      ...input.skills,
+    ],
   };
 }

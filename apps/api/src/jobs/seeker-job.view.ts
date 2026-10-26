@@ -85,6 +85,8 @@ export class SeekerJobView implements SeekerJobDto {
         keywordShare: match.breakdown.keywordShare,
       },
     };
-    this.interest = interest ? { status: interest.status, createdAt: interest.createdAt.toISOString() } : null;
+    this.interest = interest
+      ? { status: interest.status, createdAt: interest.createdAt.toISOString() }
+      : null;
   }
 }

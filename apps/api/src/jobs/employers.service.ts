@@ -70,7 +70,10 @@ export class EmployersService {
   async dashboard(userId: string): Promise<EmployerDashboardDto> {
     const account = await this.account(userId);
     const employer = await this.employerOf(userId);
-    const jobs = await this.db.job.findMany({ where: { employerId: employer.id }, orderBy: { publishedAt: 'desc' } });
+    const jobs = await this.db.job.findMany({
+      where: { employerId: employer.id },
+      orderBy: { publishedAt: 'desc' },
+    });
     const counts = await this.applicantCounts(jobs.map((j) => j.id));
     const list = jobs.map((j) => toJobDto(j, counts.get(j.id) ?? 0));
     return {
@@ -221,7 +224,13 @@ export class EmployersService {
   private async peopleOf(seekerIds: string[]) {
     const out = new Map<
       string,
-      { fullName: string; age: number | null; gender: 'MALE' | 'FEMALE'; educationLevelId: string | null; years: number | null }
+      {
+        fullName: string;
+        age: number | null;
+        gender: 'MALE' | 'FEMALE';
+        educationLevelId: string | null;
+        years: number | null;
+      }
     >();
     if (!seekerIds.length) return out;
     const profiles = await this.db.seekerProfile.findMany({
@@ -256,7 +265,9 @@ export class EmployersService {
   /** The interest request, only if it is on one of this employer's jobs (404 otherwise). */
   private async ownInterest(employer: Employer, interestId: string) {
     const interest = await this.db.interestRequest.findFirst({ where: { id: interestId } });
-    const job = interest ? await this.db.job.findFirst({ where: { id: interest.jobId, employerId: employer.id } }) : null;
+    const job = interest
+      ? await this.db.job.findFirst({ where: { id: interest.jobId, employerId: employer.id } })
+      : null;
     if (!interest || !job || interest.status === 'WITHDRAWN') throw Errors.notFound('APPLICANT_NOT_FOUND');
     return { interest, job };
   }
@@ -277,7 +288,10 @@ export class EmployersService {
         ? this.db.uploadedFile.findFirst({ where: { id: profile.currentCvFileId } })
         : Promise.resolve(null),
       profile.currentCvFileId
-        ? this.db.cvAnalysis.findFirst({ where: { fileId: profile.currentCvFileId }, orderBy: { createdAt: 'desc' } })
+        ? this.db.cvAnalysis.findFirst({
+            where: { fileId: profile.currentCvFileId },
+            orderBy: { createdAt: 'desc' },
+          })
         : Promise.resolve(null),
       this.matching.scoresForJob(job, [profile.id]),
     ]);
@@ -329,7 +343,13 @@ export class EmployersService {
         endDate: dateOnly(p.endDate),
       })),
       verifier: verifier ? { name: verifier.name, phone: verifier.phone, email: verifier.email } : null,
-      cv: cvFile ? { originalName: cvFile.originalName, sizeBytes: cvFile.sizeBytes, uploadedAt: cvFile.createdAt.toISOString() } : null,
+      cv: cvFile
+        ? {
+            originalName: cvFile.originalName,
+            sizeBytes: cvFile.sizeBytes,
+            uploadedAt: cvFile.createdAt.toISOString(),
+          }
+        : null,
       cvAnalysisStatus: analysis?.status ?? null,
     };
   }

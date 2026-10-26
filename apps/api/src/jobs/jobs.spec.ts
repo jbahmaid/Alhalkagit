@@ -33,17 +33,27 @@ async function setup() {
   const events = { jobChanged: jest.fn().mockResolvedValue(undefined) };
   const email = { enqueue: jest.fn().mockResolvedValue(undefined) };
   const audit = { record: jest.fn().mockResolvedValue(undefined) };
-  const employers = new EmployersService(prisma as any, matching, events as any, new FileLinksService(crypto), audit as any);
+  const employers = new EmployersService(
+    prisma as any,
+    matching,
+    events as any,
+    new FileLinksService(crypto),
+    audit as any,
+  );
   const seekers = new SeekerJobsService(prisma as any, matching, email as any, config);
 
   const it = await db.sector.create({ data: { code: 'IT', nameAr: 'تقنية', nameEn: 'IT' } });
   const fin = await db.sector.create({ data: { code: 'FIN', nameAr: 'مالية', nameEn: 'Finance' } });
   const sa = await db.country.create({ data: { isoCode: 'SA', nameAr: 'السعودية', nameEn: 'Saudi Arabia' } });
-  const bachelor = await db.educationLevel.create({ data: { code: 'BACHELOR', nameAr: 'ب', nameEn: 'B', rank: 40 } });
+  const bachelor = await db.educationLevel.create({
+    data: { code: 'BACHELOR', nameAr: 'ب', nameEn: 'B', rank: 40 },
+  });
   const btype = await db.businessType.create({ data: { code: 'PRIVATE', nameAr: 'خاص', nameEn: 'Private' } });
 
   async function employer(approved: boolean, tag: string) {
-    const user = await db.user.create({ data: { email: `${tag}@e.example`, role: 'EMPLOYER', status: 'ACTIVE' } });
+    const user = await db.user.create({
+      data: { email: `${tag}@e.example`, role: 'EMPLOYER', status: 'ACTIVE' },
+    });
     const row = await db.employer.create({
       data: {
         ...EMPLOYER,
@@ -59,7 +69,9 @@ async function setup() {
   }
 
   async function seeker(tag: string, completed = true) {
-    const user = await db.user.create({ data: { email: `${tag}@s.example`, role: 'SEEKER', status: 'ACTIVE' } });
+    const user = await db.user.create({
+      data: { email: `${tag}@s.example`, role: 'SEEKER', status: 'ACTIVE' },
+    });
     const person = await db.person.create({
       data: {
         userId: user.id,
@@ -90,10 +102,22 @@ async function setup() {
       },
     });
     await db.seekerEducation.create({
-      data: { seekerId: profile.id, educationLevelId: bachelor.id, institution: 'KSU', countryId: sa.id, graduationYear: 2017 },
+      data: {
+        seekerId: profile.id,
+        educationLevelId: bachelor.id,
+        institution: 'KSU',
+        countryId: sa.id,
+        graduationYear: 2017,
+      },
     });
     await db.experiencePosition.create({
-      data: { seekerId: profile.id, title: 'Data Analyst', sectorId: it.id, startDate: new Date('2020-01-01'), endDate: null },
+      data: {
+        seekerId: profile.id,
+        title: 'Data Analyst',
+        sectorId: it.id,
+        startDate: new Date('2020-01-01'),
+        endDate: null,
+      },
     });
     return { user, profile, person };
   }
@@ -116,7 +140,9 @@ async function setup() {
 describe('Seeker job DTO privacy', () => {
   it('the seeker select and the view contain no employer field', () => {
     expect(Object.keys(SEEKER_JOB_SELECT)).not.toContain('employerId');
-    expect(Object.keys(SEEKER_JOB_SELECT).some((k) => /employer|org|phone|email|business/i.test(k))).toBe(false);
+    expect(Object.keys(SEEKER_JOB_SELECT).some((k) => /employer|org|phone|email|business/i.test(k))).toBe(
+      false,
+    );
   });
 
   it('copies only whitelisted fields even from a row that carries employer data', () => {
@@ -196,7 +222,9 @@ describe('Employer approval and own jobs', () => {
     const c = await setup();
     const e = await c.employer(true, 'ok');
     expect(
-      await code(c.employers.createJob(e.user.id, c.jobInput({ sectorId: '00000000-0000-0000-0000-000000000000' }))),
+      await code(
+        c.employers.createJob(e.user.id, c.jobInput({ sectorId: '00000000-0000-0000-0000-000000000000' })),
+      ),
     ).toBe('VALIDATION_FAILED');
   });
 
@@ -206,7 +234,9 @@ describe('Employer approval and own jobs', () => {
     const b = await c.employer(true, 'b');
     const job = await c.employers.createJob(a.user.id, c.jobInput());
     expect(await code(c.employers.getJob(b.user.id, job.id))).toBe('JOB_NOT_FOUND');
-    expect(await code(c.employers.updateJob(b.user.id, job.id, c.jobInput({ title: 'X' })))).toBe('JOB_NOT_FOUND');
+    expect(await code(c.employers.updateJob(b.user.id, job.id, c.jobInput({ title: 'X' })))).toBe(
+      'JOB_NOT_FOUND',
+    );
     expect(await code(c.employers.closeJob(b.user.id, job.id, { outcome: 'CLOSED_WITHOUT_HIRING' }))).toBe(
       'JOB_NOT_FOUND',
     );
@@ -230,7 +260,9 @@ describe('Interest requests and applicant access', () => {
     const res = await c.seekers.expressInterest(s.user.id, job.id, { consent: true });
     expect(res.interest?.status).toBe('SUBMITTED');
     expect(c.db.interestRequest.rows[0].consentAt).toBeInstanceOf(Date);
-    expect(await code(c.seekers.expressInterest(s.user.id, job.id, { consent: true }))).toBe('INTEREST_EXISTS');
+    expect(await code(c.seekers.expressInterest(s.user.id, job.id, { consent: true }))).toBe(
+      'INTEREST_EXISTS',
+    );
   });
 
   it("emails the employer in the employer's language without the seeker's ID, dar or fakhdh", async () => {
@@ -266,11 +298,24 @@ describe('Interest requests and applicant access', () => {
     expect(profile.fullName).toBe('Khaled Salem Ali applied');
     expect(profile.mobile).toBe('+966501234567');
     const json = JSON.stringify(profile);
-    for (const secret of ['ENCRYPTED-ID', 'hash-applied', 'DAR-SECRET', 'FAKHDH-SECRET', 'idNumber', 'darId', 'fakhdhId']) {
+    for (const secret of [
+      'ENCRYPTED-ID',
+      'hash-applied',
+      'DAR-SECRET',
+      'FAKHDH-SECRET',
+      'idNumber',
+      'darId',
+      'fakhdhId',
+    ]) {
       expect(json).not.toContain(secret);
     }
     expect(c.db.interestRequest.rows.find((r: any) => r.id === interestA.id).status).toBe('VIEWED');
-    expect(c.audit.record).toHaveBeenCalledWith('VIEW_SENSITIVE', 'seeker_profiles', applied.profile.id, expect.anything());
+    expect(c.audit.record).toHaveBeenCalledWith(
+      'VIEW_SENSITIVE',
+      'seeker_profiles',
+      applied.profile.id,
+      expect.anything(),
+    );
 
     // Someone who expressed interest in ANOTHER employer's job is out of reach.
     expect(await code(c.employers.applicant(a.user.id, interestB.id))).toBe('APPLICANT_NOT_FOUND');
@@ -306,7 +351,12 @@ describe('Closing a job', () => {
     const interest = c.db.interestRequest.rows[0];
 
     expect(
-      await code(c.employers.closeJob(e.user.id, job.id, { outcome: 'HIRED_VIA_PLATFORM', hiredInterestId: late.profile.id })),
+      await code(
+        c.employers.closeJob(e.user.id, job.id, {
+          outcome: 'HIRED_VIA_PLATFORM',
+          hiredInterestId: late.profile.id,
+        }),
+      ),
     ).toBe('HIRED_APPLICANT_INVALID');
     const closed = await c.employers.closeJob(e.user.id, job.id, {
       outcome: 'HIRED_VIA_PLATFORM',
@@ -324,7 +374,9 @@ describe('Closing a job', () => {
     expect((await c.seekers.list(late.user.id, {})).items).toHaveLength(0);
     const mine = await c.seekers.myInterests(s.user.id);
     expect(mine[0]).toMatchObject({ jobAvailable: false, status: 'HIRED' });
-    expect(await code(c.employers.closeJob(e.user.id, job.id, { outcome: 'CLOSED_WITHOUT_HIRING' }))).toBe('JOB_CLOSED');
+    expect(await code(c.employers.closeJob(e.user.id, job.id, { outcome: 'CLOSED_WITHOUT_HIRING' }))).toBe(
+      'JOB_CLOSED',
+    );
     expect(await code(c.employers.updateJob(e.user.id, job.id, c.jobInput()))).toBe('JOB_CLOSED');
   });
 });
