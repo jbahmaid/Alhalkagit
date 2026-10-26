@@ -22,10 +22,16 @@ const HOP_BY_HOP = new Set([
   'content-length',
 ]);
 
+/**
+ * The caller's IP. In the Docker image `client-ip.cjs` strips any forwarding headers the browser
+ * sent, so Next fills `x-forwarded-for` with the socket's peer address and that is what we read.
+ * With TRUST_PROXY_HEADERS=true (behind your own reverse proxy) the first entry is the client
+ * that proxy saw.
+ */
 function clientIp(req: NextRequest): string | null {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return req.headers.get('x-real-ip');
+  const first = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  if (!first) return null;
+  return first.replace(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/, '$1');
 }
 
 async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }): Promise<Response> {
@@ -36,6 +42,7 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
   req.headers.forEach((value, key) => {
     if (!HOP_BY_HOP.has(key.toLowerCase())) headers.set(key, value);
   });
+  for (const h of ['x-forwarded-for', 'x-real-ip', 'forwarded']) headers.delete(h);
   const ip = clientIp(req);
   if (ip) headers.set('x-forwarded-for', ip);
   headers.set('x-forwarded-proto', req.nextUrl.protocol.replace(':', ''));

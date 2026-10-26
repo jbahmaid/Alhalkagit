@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ScaledThrottlerGuard } from './common/scaled-throttler.guard';
 import { ClsModule } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
 import type { Request } from 'express';
@@ -60,7 +61,7 @@ import { ReportsModule } from './reports/reports.module';
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     // Global guards, in order: rate limit, authenticate, check permissions.
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ScaledThrottlerGuard },
     { provide: APP_GUARD, useExisting: JwtAuthGuard },
     { provide: APP_GUARD, useExisting: PermissionsGuard },
   ],

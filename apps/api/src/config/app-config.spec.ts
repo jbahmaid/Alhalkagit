@@ -46,5 +46,16 @@ describe('secrets and config', () => {
     expect(cfg.sms.enabled).toBe(false);
     expect(cfg.cvAnalysis.enabled).toBe(false);
     expect(cfg.cookies.secure).toBe(false);
+    expect(cfg.throttle).toEqual({ enabled: true, factor: 1 });
+    const base = { DATABASE_URL: 'postgresql://a@b/c', SECRETS_FILE: file };
+    expect(
+      loadConfig({ ...base, THROTTLE_FACTOR: '10' }, { generateMissingSecrets: true }).throttle.factor,
+    ).toBe(10);
+    expect(
+      loadConfig({ ...base, THROTTLE_FACTOR: '500' }, { generateMissingSecrets: true }).throttle.factor,
+    ).toBe(100);
+    expect(() => loadConfig({ ...base, THROTTLE_FACTOR: '0' }, { generateMissingSecrets: true })).toThrow(
+      /THROTTLE_FACTOR/,
+    );
   });
 });

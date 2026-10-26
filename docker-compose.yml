@@ -43,6 +43,7 @@ x-api-env: &api-env
   S3_SECRET_KEY: ${S3_SECRET_KEY:-sanad-local-only}
   S3_REGION: ${S3_REGION:-us-east-1}
   THROTTLE_ENABLED: ${THROTTLE_ENABLED:-true}
+  THROTTLE_FACTOR: ${THROTTLE_FACTOR:-1}
   LOG_LEVEL: ${LOG_LEVEL:-log}
 
 services:
@@ -197,6 +198,8 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: '3000'
       API_INTERNAL_URL: http://api:4000
+      # Only behind your own reverse proxy: trust the X-Forwarded-For it sets (see .env.example).
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
     ports:
       - '${WEB_PORT:-3000}:3000'
     depends_on:
