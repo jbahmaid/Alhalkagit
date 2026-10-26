@@ -448,6 +448,8 @@ const T = {
   withExp:['لديهم خبرة','With experience'],withoutExp:['بلا خبرة','Without experience'],totalJobs:['إجمالي الفرص','Total jobs'],
   bySector:['حسب القطاع','By sector'],byStatus:['حسب الحالة','By status'],empReportsNote:['تقارير عامة مجمّعة، وأرقام فرصك أدناه.','General aggregated reports, plus figures for your own jobs below.'],
   myJobsStats:['أرقام فرصي','My jobs in numbers'],
+  exportXlsx:['تصدير Excel','Export to Excel'],
+  exportToast:['جُهّز ملف Excel بالبيانات المعروضة، وسُجّلت العملية في سجل التدقيق.','Excel file prepared with the data shown, and the export was recorded in the audit log.'],
 };
 function t(k,vars){const v=T[k];if(!v){console.warn('i18n missing:',k);return k;}let s=v[S.lang==='ar'?0:1];if(vars)for(const n in vars)s=s.replace('{'+n+'}',vars[n]);return s;}
 function L(v){return Array.isArray(v)?v[S.lang==='ar'?0:1]:(v??'');}
@@ -548,6 +550,7 @@ const IC={
   plus:'<path d="M12 5v14M5 12h14"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
   cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   warn:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+  download:'<path d="M12 4v12m0 0-5-5m5 5 5-5M4 20h16"/>',
 };
 const icon=(n,cls='')=>`<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${IC[n]}</svg>`;
 const LOGO=`<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10" fill="var(--primary)"/><path d="M9 21c3-6 15-6 18 0" stroke="var(--on-primary)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M13 25c2-3 8-3 10 0" stroke="var(--accent)" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="18" cy="12" r="3" fill="var(--on-primary)"/></svg>`;
@@ -592,6 +595,7 @@ const backBtn=to=>`<button class="btn btn-ghost" data-go="${to}">${icon('chev','
 const loc=j=>`${esc(L(j.city))}${S.lang==='ar'?'، ':', '}${esc(L(COUNTRIES[j.country]))}`;
 const note=(kind,ic,html)=>`<div class="note ${kind}">${icon(ic)}<p>${html}</p></div>`;
 const roleName=r=>({seeker:t('roleSeeker'),employer:t('roleEmployer'),admin:t('roleAdmin')}[r]||'—');
+const exportBtn=()=>`<div class="actions" style="margin:0 0 16px"><button type="button" class="btn btn-secondary btn-sm" data-act="exportXlsx">${icon('download')}${t('exportXlsx')}</button></div>`;
 
 /* ======================= Screens ======================= */
 const V={};
@@ -794,7 +798,7 @@ V['S-13']=()=>`<div class="narrow">${backBtn('S-12')}${pageHead(t('postTitle'))}
 
 const curJob=()=>JOBS.find(j=>j.id===S.jobId&&j.owner==='e1')||JOBS[0];
 V['S-14']=()=>{const j=curJob();const apps=(APPS[j.id]||[]).slice().sort((a,b)=>b.score-a.score);
-  return `${backBtn('S-12')}${pageHead(t('applicantsTitle'),esc(L(j.title)))}${note('privacy','info',t('applicantsNote'))}
+  return `${backBtn('S-12')}${pageHead(t('applicantsTitle'),esc(L(j.title)))}${note('privacy','info',t('applicantsNote'))}${exportBtn()}
   ${apps.length?`<div class="job-list">${apps.map(a=>{const p=PEOPLE[a.s];return `<article class="card job" aria-labelledby="ap-${a.s}">
     <div class="job-top"><h2 id="ap-${a.s}">${esc(L(p.name))}</h2>${matchBadge(a.score)}</div>
     <ul class="meta"><li>${icon('user')}${p.age} ${t('yearsUnit')} · ${p.gender==='m'?t('male'):t('female')}</li><li>${icon('cap')}${esc(lk('edu',p.edu))}</li><li>${icon('clock')}${t('expN',{n:p.years})}</li></ul>
@@ -870,7 +874,7 @@ V['S-19']=()=>{const tab=S.lookupTab;return `${pageHead(t('lookupsTitle'),t('loo
   </tbody></table></div></div>`;};
 
 const uStatus=s=>s==='active'?`<span class="badge match">${icon('check')}${t('uActive')}</span>`:s==='pending'?`<span class="badge near">${icon('clock')}${t('uPending')}</span>`:`<span class="badge danger">${icon('x')}${t('uSuspended')}</span>`;
-V['S-20']=()=>`${pageHead(t('usersTitle'))}
+V['S-20']=()=>`${pageHead(t('usersTitle'))}${exportBtn()}
 <div class="filters" role="search"><div class="field"><label for="uq">${t('search')}</label><input type="search" id="uq" placeholder="${t('searchUsers')}" value="${esc(S.userQ)}" data-filter="userQ"></div>
 <div class="field"><label for="ur">${t('role')}</label><select id="ur" data-filter="userRole"><option value="">${t('allRoles')}</option>${['seeker','employer','admin'].map(r=>`<option value="${r}" ${S.userRole===r?'selected':''}>${roleName(r)}</option>`).join('')}</select></div></div>
 <div id="user-results">${userResults()}</div>`;
@@ -879,7 +883,7 @@ function userResults(){const q=S.userQ.trim().toLowerCase();const rows=USERS.fil
   ${rows.map(u=>`<tr><td data-label="${t('name')}"><strong>${esc(L(u.n))}</strong></td><td data-label="${t('role')}">${roleName(u.r)}</td><td data-label="${t('email')}"><span dir="ltr">${u.e}</span></td><td data-label="${t('status')}">${uStatus(u.s)}</td><td data-label="${t('registered')}">${fmtDate(u.d)}</td>
   <td data-label="${t('actions')}"><button class="btn btn-secondary btn-sm" aria-label="${t('view')}: ${esc(L(u.n))}">${t('view')}</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty"><p>${t('noRows')}</p></div>`);}
 
-V['S-21']=()=>{const A=S.audit;const tables=[...new Set(AUDIT.map(a=>a.e))];return `${pageHead(t('auditTitle'))}${note('info','lock',t('auditNote'))}
+V['S-21']=()=>{const A=S.audit;const tables=[...new Set(AUDIT.map(a=>a.e))];return `${pageHead(t('auditTitle'))}${note('info','lock',t('auditNote'))}${exportBtn()}
 <div class="filters f5" role="search">
   <div class="field"><label for="au">${t('user')}</label><input type="search" id="au" value="${esc(A.u)}" data-filter="audit.u"></div>
   <div class="field"><label for="aa">${t('action')}</label><select id="aa" data-filter="audit.a"><option value="">${t('allActions')}</option>${['create','update','delete','approve','login','loginFail'].map(a=>`<option value="${a}" ${A.a===a?'selected':''}>${auditActionLabel(a)}</option>`).join('')}</select></div>
@@ -903,7 +907,7 @@ function bars(title,rows,color='var(--primary)'){
     <div class="bar-label"><span>${esc(l)}</span><span class="v">${hidden?t('hiddenLt5'):num(v)}</span></div>
     <svg viewBox="0 0 100 14" preserveAspectRatio="none" focusable="false"><rect x="0" y="0" width="100" height="14" rx="1.5" fill="var(--surface-2)"/>${hidden?`<rect x="0.5" y="0.5" width="99" height="13" fill="none" stroke="var(--border)" stroke-dasharray="2 1.5" vector-effect="non-scaling-stroke"/>`:`<rect x="${x}" y="0" width="${w}" height="14" rx="1.5" fill="${color}"/>`}</svg></div>`;}).join('')}</figure>`;}
 V['S-22']=()=>{const emp=S.role==='employer';const js=myJobs();
-  return `${pageHead(t('reportsTitle'),emp?t('empReportsNote'):t('reportsLead'))}${note('info','shield',t('under5'))}
+  return `${pageHead(t('reportsTitle'),emp?t('empReportsNote'):t('reportsLead'))}${note('info','shield',t('under5'))}${exportBtn()}
   ${emp?`<h2>${t('myJobsStats')}</h2><div class="stats"><div class="stat"><div class="n">${js.length}</div><div class="l">${t('totalJobs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.status==='open').length}</div><div class="l">${t('openJobs')}</div></div><div class="stat"><div class="n">${js.reduce((s,j)=>s+(APPS[j.id]||[]).length,0)}</div><div class="l">${t('interestReqs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.outcome==='hired').length}</div><div class="l">${t('hiredVia')}</div></div></div>`:''}
   <h2>${t('seekerStats')}</h2><div class="stats"><div class="stat"><div class="n">${num(1248)}</div><div class="l">${t('totalSeekers')}</div></div><div class="stat"><div class="n">${num(733)}</div><div class="l">${t('withExp')}</div></div></div>
   <div class="charts">
@@ -986,6 +990,7 @@ const ACT={
     onConfirm(){S.myReqs.unshift({job:id,d:new Date().toISOString().slice(0,10)});render();toast(t('interestToast'));const h=$('#view h1');h&&h.focus();}});},
   simApprove(){S.empApproved=true;toast(t('approvedToast'));go('S-12');},
   noop(){},
+  exportXlsx(){toast(t('exportToast'));},
   openCv(el,e){e.preventDefault();toast(t('cvLinkHint'));},
   approve(el){const p=PENDING.find(x=>x.id===el.dataset.id);PENDING=PENDING.filter(x=>x!==p);render();toast(t('approvedA'));$('#view h1').focus();},
   reject(el){const id=el.dataset.id;const p=PENDING.find(x=>x.id===id);openDialog({title:t('rejectTitle'),confirm:t('reject'),danger:true,
