@@ -17,7 +17,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VerifyEmailPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const { email, wait } = await searchParams;
+  const { email, wait, as } = await searchParams;
   const seconds = Number.isFinite(Number(wait)) ? Number(wait) : OTP_RESEND_COOLDOWN_SECONDS;
-  return <VerifyEmailForm email={email} wait={Math.min(Math.max(seconds, 0), 3600)} />;
+  return (
+    <VerifyEmailForm email={email} wait={Math.min(Math.max(seconds, 0), 3600)} employer={as === 'employer'} />
+  );
 }
