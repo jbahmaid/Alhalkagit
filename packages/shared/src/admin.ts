@@ -146,7 +146,7 @@ export interface MatchingSettingsDto {
   thresholds: { suitable: number; near: number };
 }
 
-export const EXPORT_KINDS = ['full', 'users', 'audit'] as const;
+export const EXPORT_KINDS = ['full', 'users', 'audit', 'reports'] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
 
 export interface ExportTokenDto {

@@ -8,3 +8,4 @@ export * from './locale';
 export * from './profile';
 export * from './jobs';
 export * from './admin';
+export * from './reports';
