@@ -14,7 +14,14 @@ export interface AppConfig {
   cookies: { secure: boolean };
   smtp: { host: string; port: number; secure: boolean; user?: string; password?: string; from: string };
   sms: { enabled: boolean; provider: string };
-  cvAnalysis: { enabled: boolean; model: string; apiKeyPresent: boolean };
+  cvAnalysis: {
+    /** CV_ANALYSIS_ENABLED=true AND an ANTHROPIC_API_KEY is set. */
+    enabled: boolean;
+    model: string;
+    apiKeyPresent: boolean;
+    /** Server-side fallback model when the main model declines (on by default). */
+    fallback: boolean;
+  };
   s3: { endpoint: string; bucket: string; accessKey: string; secretKey: string; region: string };
   throttle: { enabled: boolean };
   logLevel: string;
@@ -107,9 +114,10 @@ export function loadConfig(
     },
     sms: { enabled: bool(env.SMS_ENABLED, false), provider: env.SMS_PROVIDER || 'log' },
     cvAnalysis: {
-      enabled: bool(env.CV_ANALYSIS_ENABLED, false),
+      enabled: bool(env.CV_ANALYSIS_ENABLED, false) && !!env.ANTHROPIC_API_KEY,
       model: env.CV_ANALYSIS_MODEL || 'claude-opus-5-5',
       apiKeyPresent: !!env.ANTHROPIC_API_KEY,
+      fallback: bool(env.CV_ANALYSIS_FALLBACK, true),
     },
     s3: {
       endpoint: env.S3_ENDPOINT || 'http://localhost:9000',

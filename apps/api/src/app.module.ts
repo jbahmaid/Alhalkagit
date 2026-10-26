@@ -12,10 +12,12 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { AppConfig } from './config/app-config';
 import { APP_CONFIG, AppConfigModule } from './config/config.module';
 import { CryptoModule } from './crypto/crypto.module';
+import { FilesModule } from './files/files.module';
 import { HealthController } from './health/health.controller';
 import { LookupsModule } from './lookups/lookups.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SeekersModule } from './seekers/seekers.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { PrismaModule } from './prisma/prisma.module';
     NotificationsModule.forApi(),
     AuthModule,
     LookupsModule,
+    FilesModule,
+    SeekersModule,
   ],
   controllers: [HealthController],
   providers: [

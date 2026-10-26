@@ -92,7 +92,35 @@ export class CryptoService {
     return randomBytes(bytes).toString('base64url');
   }
 
-  sha256(value: string): string {
+  /**
+   * Compact signed token `<payload>.<mac>` (both base64url) for short-lived links such as CV
+   * downloads. The MAC is HMAC-SHA256 with the server key, domain-separated by `purpose`.
+   */
+  signToken(purpose: string, payload: Record<string, unknown>): string {
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${body}.${this.mac(purpose, body)}`;
+  }
+
+  /** Returns the payload when the MAC is valid, otherwise null. Expiry is checked by the caller. */
+  verifyToken<T = Record<string, unknown>>(purpose: string, token: string): T | null {
+    const [body, mac, extra] = token.split('.');
+    if (!body || !mac || extra !== undefined) return null;
+    const expected = this.mac(purpose, body);
+    const a = Buffer.from(mac);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+    try {
+      return JSON.parse(Buffer.from(body, 'base64url').toString('utf8')) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private mac(purpose: string, body: string): string {
+    return createHmac('sha256', this.hashKey).update(`token:${purpose}:${body}`).digest('base64url');
+  }
+
+  sha256(value: string | Buffer): string {
     return createHash('sha256').update(value).digest('hex');
   }
 
