@@ -322,20 +322,41 @@ export class AuthService {
     const rec = await this.tokens.findByToken(rawToken);
     if (!rec) return invalid('AUTH_REFRESH_INVALID');
 
+    // Rotated a moment ago (two tabs, or a navigation that dropped the response with the new
+    // cookie): the old token still opens the session for a short grace period, in a new
+    // sibling token of the same family. The old record keeps its rotation time, so the grace
+    // never extends, and nothing is issued once the family has ended (logout, password change).
+    let grace = false;
     if (rec.revokedAt) {
       const justRotated =
         rec.revokeReason === 'ROTATED' && Date.now() - rec.revokedAt.getTime() < REFRESH_RACE_GRACE_MS;
-      if (justRotated) return invalid('AUTH_REFRESH_RACE', false);
-      // A revoked token was replayed: assume theft and end the whole session family.
-      await this.prisma.runAs({ userId: rec.userId, ...meta }, () =>
-        this.tokens.revokeFamily(rec.familyId, 'REUSE_DETECTED'),
-      );
-      return invalid('AUTH_REFRESH_REUSED');
+      if (justRotated) {
+        if (!(await this.tokens.familyActive(rec.familyId))) return invalid('AUTH_REFRESH_INVALID');
+        grace = true;
+      } else {
+        // A revoked token was replayed: assume theft and end the whole session family.
+        await this.prisma.runAs({ userId: rec.userId, ...meta }, () =>
+          this.tokens.revokeFamily(rec.familyId, 'REUSE_DETECTED'),
+        );
+        return invalid('AUTH_REFRESH_REUSED');
+      }
     }
     if (rec.expiresAt.getTime() < Date.now()) return invalid('AUTH_REFRESH_INVALID');
 
     const user = await this.prisma.db.user.findUnique({ where: { id: rec.userId } });
     if (!user || user.status !== UserStatus.ACTIVE) return invalid('AUTH_ACCOUNT_SUSPENDED');
+
+    if (grace) {
+      const issued = await this.prisma.runAs({ userId: user.id, role: user.role, ...meta }, async () => {
+        const next = await this.tokens.issueRefresh(user.id, meta, rec.familyId);
+        return {
+          session: await this.buildSession(user),
+          refreshToken: next.token,
+          refreshExpiresAt: next.expiresAt,
+        };
+      });
+      return { result: { authenticated: true, ...issued.session }, issued };
+    }
 
     const issued = await this.prisma.runAs({ userId: user.id, role: user.role, ...meta }, () =>
       this.prisma.tx(async (tx) => {
