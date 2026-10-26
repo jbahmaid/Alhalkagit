@@ -5,7 +5,7 @@
  *
  * Needs the `playwright` package. Checks: sign-up lands in the wizard, validation messages,
  * "finish later", the six steps with three positions then deleting one, CV upload / wrong type /
- * replace / download, finishing, editing a section from "ملفي", English, 375px without
+ * replace / download, finishing (to the jobs list), editing a section from "ملفي", English, 375px without
  * horizontal scroll, and no console errors. Prints the seeker email for the audit query.
  */
 const { chromium } = require('playwright');
@@ -273,10 +273,12 @@ const next = (page) => page.getByRole('button', { name: 'التالي' }).click(
     await page.waitForSelector('text=cv-final.pdf');
   });
 
-  await check('Finish -> summary with every section', async () => {
-    await page.getByRole('button', { name: 'إنهاء الملف' }).click();
+  await check('Finish -> ranked jobs (S-07), then the summary with every section', async () => {
+    await page.getByRole('button', { name: 'إنهاء وعرض الفرص' }).click();
+    await page.waitForURL(/\/ar\/seeker\/jobs$/);
+    await page.waitForSelector('text=اكتمل ملفك. هذه الفرص مرتبة حسب ملاءمتها لك.');
+    await page.getByRole('link', { name: 'ملفي' }).first().click();
     await page.waitForURL(/\/ar\/seeker\/profile$/);
-    await page.waitForSelector('text=اكتمل ملفك المهني');
     await page.waitForSelector('text=مكتمل');
     const sections = await page.locator('main h2').allTextContents();
     for (const s of ['البيانات الشخصية', 'الدار والفخذ', 'التواصل', 'التعليم', 'الخبرات', 'السيرة الذاتية']) {
