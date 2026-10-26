@@ -1,0 +1,27 @@
+{
+  "name": "sanad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sanad: professional talent platform (منصة ربط الكفاءات المهنية)",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @sanad/shared && npm run build -w @sanad/api && npm run build -w @sanad/web",
+    "build:shared": "npm run build -w @sanad/shared",
+    "lint": "npm run build:shared && npm run lint -w @sanad/shared -w @sanad/api -w @sanad/web",
+    "typecheck": "npm run build:shared && npm run typecheck -w @sanad/api -w @sanad/web",
+    "test": "npm run build:shared && npm run test -w @sanad/shared -w @sanad/api -w @sanad/web",
+    "test:int": "npm run test:int -w @sanad/api",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}
