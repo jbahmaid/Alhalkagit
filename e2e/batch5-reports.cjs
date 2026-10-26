@@ -57,7 +57,15 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function call(p, opts = {}) {
   // Login and email routes are rate limited per IP; wait and retry instead of failing.
   for (let i = 0; ; i++) {
-    const r = await callOnce(p, opts);
+    let r;
+    try {
+      r = await callOnce(p, opts);
+    } catch (err) {
+      // After the blocking `docker compose exec` the pooled keep-alive socket may have been
+      // closed by the server; one fresh attempt is enough.
+      if (i >= 2) throw err;
+      continue;
+    }
     if (r.status !== 429 || i >= 15) return r;
     await wait(5000);
   }
