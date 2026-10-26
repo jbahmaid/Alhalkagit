@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import {
   JOB_UPDATED_JOB,
+  RECOMPUTE_ALL_JOB,
   JobUpdatedJob,
   PROFILE_UPDATED_JOB,
   ProfileUpdatedJob,
@@ -42,6 +43,11 @@ export class MatchingProcessor extends WorkerHost {
         const { jobId } = job.data as JobUpdatedJob;
         const n = await this.matching.recomputeJob(jobId);
         this.logger.log(`job.updated job=${jobId}: ${n} score(s) changed`);
+        return n;
+      }
+      if (job.name === RECOMPUTE_ALL_JOB) {
+        const n = await this.matching.recomputeAll();
+        this.logger.log(`recompute.all: ${n} score(s) changed`);
         return n;
       }
       this.logger.warn(`Unknown matching job "${job.name}"`);

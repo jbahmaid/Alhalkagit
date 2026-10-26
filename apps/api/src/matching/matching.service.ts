@@ -228,6 +228,14 @@ export class MatchingService {
     return this.store(results, { jobId });
   }
 
+  /** Worker, after the settings change: every open job against every seeker. */
+  async recomputeAll(): Promise<number> {
+    const jobs = await this.db.job.findMany({ where: { status: 'OPEN' }, select: { id: true } });
+    let n = 0;
+    for (const j of jobs) n += await this.recomputeJob(j.id);
+    return n;
+  }
+
   /**
    * Writes only rows whose score, label or breakdown changed, so unchanged pairs add nothing
    * to the audit log (match_scores is audited like every table).

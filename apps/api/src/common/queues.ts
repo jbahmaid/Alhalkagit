@@ -40,5 +40,12 @@ export interface JobUpdatedJob {
   at: string;
 }
 
+/** Job name on the matching queue after the weights or thresholds change: every open job. */
+export const RECOMPUTE_ALL_JOB = 'recompute.all';
+
+export interface RecomputeAllJob {
+  at: string;
+}
+
 /** Wait before recomputing, so a burst of edits is computed once (same job id while waiting). */
 export const MATCHING_DEBOUNCE_MS = 3000;
