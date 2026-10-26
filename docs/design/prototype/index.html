@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سند: نموذج تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Tokens: mirror docs/design/tokens.json */
+:root{
+  --bg:#F6F5F1;--surface:#FFFFFF;--surface-2:#EFEDE6;--border:#D9D6CC;
+  --text:#1B2421;--text-muted:#56615C;
+  --primary:#0E5E58;--primary-hover:#0A4A45;--primary-soft:#E2F0EE;--on-primary:#FFFFFF;
+  --accent:#9A6212;--accent-soft:#F6ECDC;
+  --match:#156A3A;--match-soft:#E3F3E8;--near:#8A4B00;--near-soft:#FBEFD9;
+  --danger:#B42318;--danger-soft:#FDECEA;--info:#1F5C99;--info-soft:#E6EFF8;--focus:#0B66C3;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;
+  --sh-sm:0 1px 2px rgba(16,24,22,.06);--sh-md:0 4px 16px rgba(16,24,22,.08);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0E1412;--surface:#161F1C;--surface-2:#1E2926;--border:#2D3A36;
+    --text:#E6ECE9;--text-muted:#A2B0AA;
+    --primary:#5CC2B6;--primary-hover:#7AD3C8;--primary-soft:#15332F;--on-primary:#06201D;
+    --accent:#E0B062;--accent-soft:#33281A;
+    --match:#7BD49C;--match-soft:#133222;--near:#F2B766;--near-soft:#3A2A12;
+    --danger:#FF8A80;--danger-soft:#3A1714;--info:#8DBBEE;--info-soft:#142638;--focus:#7DB3FF;
+    --sh-sm:none;--sh-md:0 4px 20px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:16px;line-height:1.7;background:var(--bg);color:var(--text)}
+h1,h2,h3{line-height:1.35;margin:0 0 8px;font-weight:700}
+h1{font-size:24px}h2{font-size:20px}h3{font-size:17px;font-weight:600}
+@media (min-width:768px){h1{font-size:30px}}
+p{margin:0 0 12px}
+a{color:var(--primary)}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[dir=rtl] .flip{transform:scaleX(-1)}
+[dir=ltr] .flip-back{transform:scaleX(-1)}
+[tabindex="-1"]:focus{outline:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;inset-inline-start:8px;top:-60px;background:var(--primary);color:var(--on-primary);padding:10px 16px;border-radius:var(--r-md);z-index:50}
+.skip:focus{top:8px}
+.container{max-width:1120px;margin-inline:auto;padding-inline:16px}
+@media (min-width:768px){.container{padding-inline:24px}}
+.narrow{max-width:640px;margin-inline:auto}
+
+/* Prototype toolbar (not part of the product) */
+.proto{background:var(--surface-2);border-bottom:1px dashed var(--border);font-size:14px}
+.proto .container{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding-block:8px}
+.proto-tag{font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px}
+.seg{display:flex;flex:1 1 280px;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.seg button{flex:1;min-height:44px;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;font-weight:500;cursor:pointer;padding:4px 6px}
+.seg button+button{border-inline-start:1px solid var(--border)}
+.seg button[aria-pressed=true]{background:var(--primary);color:var(--on-primary)}
+.proto-screen{flex:1 1 240px;display:flex;align-items:center;gap:8px;min-width:0}
+.proto-screen select{flex:1;min-width:0;min-height:44px}
+
+/* App header */
+.app-h{background:var(--surface);border-bottom:1px solid var(--border)}
+.app-h .row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);font-weight:700;font-size:20px;background:none;border:0;padding:0;font-family:inherit;cursor:pointer;min-height:44px;text-align:start}
+.brand small{display:block;font-size:12px;font-weight:400;color:var(--text-muted);line-height:1.3}
+@media (max-width:479px){.brand small{display:none}}
+.nav{display:flex;flex-wrap:wrap;gap:4px;padding-bottom:8px}
+@media (min-width:900px){.app-h .row{flex-wrap:nowrap}.nav{padding-bottom:0}}
+.nav button{min-height:44px;padding:6px 12px;border:0;border-radius:var(--r-md);background:transparent;color:var(--text-muted);font:inherit;font-size:15px;font-weight:500;cursor:pointer}
+.nav button:hover{background:var(--surface-2);color:var(--text)}
+.nav button[aria-current=page]{background:var(--primary-soft);color:var(--primary);font-weight:600}
+.h-actions{display:flex;gap:8px;align-items:center}
+
+main{padding-block:24px 64px}
+.page-head{margin-bottom:20px}
+.page-head p{color:var(--text-muted)}
+.eyebrow{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;display:block}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 18px;border-radius:var(--r-md);border:1px solid transparent;font:inherit;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;line-height:1.3;text-align:center}
+.btn-primary{background:var(--primary);color:var(--on-primary)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn-secondary:hover{background:var(--surface-2)}
+.btn-ghost{background:transparent;color:var(--primary);padding-inline:10px}
+.btn-ghost:hover{background:var(--primary-soft)}
+.btn-danger{background:var(--danger);color:#fff}
+@media (prefers-color-scheme:dark){.btn-danger{color:#2A0B08}}
+.btn[disabled],.btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.btn-block{width:100%}
+.btn-sm{min-height:44px;padding:6px 12px;font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.actions.between{justify-content:space-between}
+
+/* Forms */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-width:0}
+label,legend{font-weight:500;font-size:15px}
+.opt{font-weight:400;color:var(--text-muted);font-size:13px}
+.hint{font-size:13px;color:var(--text-muted);margin:0}
+input[type=text],input[type=email],input[type=tel],input[type=password],input[type=number],input[type=date],input[type=month],input[type=search],select,textarea{
+  width:100%;min-height:44px;padding:9px 12px;font:inherit;font-size:16px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)}
+input::placeholder,textarea::placeholder{color:var(--text-muted);opacity:1}
+input:focus-visible,select:focus-visible,textarea:focus-visible{border-color:var(--focus)}
+input:user-invalid,select:user-invalid{border-color:var(--danger)}
+textarea{min-height:140px;resize:vertical}
+.ltr{direction:ltr;text-align:start}
+[dir=rtl] .ltr{text-align:right}
+fieldset{border:0;padding:0;margin:0 0 16px;min-width:0}
+fieldset.group{border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px 4px;background:var(--surface)}
+fieldset.group>legend{padding-inline:6px}
+legend{margin-bottom:6px}
+.choices{display:flex;flex-wrap:wrap;gap:8px}
+.choice{display:flex;align-items:center;gap:10px;flex:1 1 130px;min-height:44px;padding:8px 14px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);cursor:pointer;font-weight:500}
+.choice:has(input:checked){border-color:var(--primary);background:var(--primary-soft)}
+.choice:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+input[type=radio],input[type=checkbox]{width:20px;height:20px;margin:0;accent-color:var(--primary);flex:none}
+.check{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding-block:10px;cursor:pointer}
+.check input{margin-top:3px}
+.grid-2{display:grid;gap:0 16px}
+@media (min-width:640px){.grid-2{grid-template-columns:1fr 1fr}}
+.age-out{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--text-muted)}
+.age-out strong{color:var(--text)}
+.otp{font-size:24px !important;letter-spacing:.4em;text-align:center !important;font-variant-numeric:tabular-nums;max-width:260px}
+
+/* Cards & surfaces */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--sh-sm);min-width:0}
+@media (min-width:768px){.card{padding:20px 24px}}
+.card+.card{margin-top:16px}
+.job-list>.card+.card,.how>.card+.card,.charts>.card+.card{margin-top:0}
+.stack>*+*{margin-top:12px}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);font-size:14px;margin-bottom:16px;line-height:1.6}
+.note p{margin:0}
+.note.info{background:var(--info-soft);color:var(--info)}
+.note.privacy{background:var(--primary-soft);color:var(--primary)}
+.note.warn{background:var(--near-soft);color:var(--near)}
+.note .i{margin-top:2px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;line-height:1.4}
+.badge svg.i{width:16px;height:16px;stroke-width:2.5}
+.badge.match{background:var(--match-soft);color:var(--match)}
+.badge.near{background:var(--near-soft);color:var(--near)}
+.badge.info{background:var(--info-soft);color:var(--info)}
+.badge.muted{background:var(--surface-2);color:var(--text-muted)}
+.badge.danger{background:var(--danger-soft);color:var(--danger)}
+.badge.primary{background:var(--primary-soft);color:var(--primary)}
+.badge .score{font-weight:500;opacity:.9}
+.badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+
+/* Job cards */
+.job-list{display:grid;gap:12px}
+@media (min-width:900px){.job-list{grid-template-columns:1fr 1fr}}
+.job{display:flex;flex-direction:column;gap:10px}
+.job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.job h2{font-size:18px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 16px;list-style:none;padding:0;margin:0;font-size:14px;color:var(--text-muted)}
+.meta li{display:flex;align-items:center;gap:6px}
+.meta svg.i{width:18px;height:18px}
+.job-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px;margin-top:auto}
+.legend-line{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--text-muted);align-items:center;margin-bottom:12px}
+.filters{display:grid;gap:0 12px;margin-bottom:8px}
+@media (min-width:768px){.filters{grid-template-columns:2fr 1fr 1fr}}
+@media (min-width:768px){.filters.f5{grid-template-columns:1.4fr 1fr 1fr 1fr 1fr}}
+
+/* Stepper */
+.stepper-mobile{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}
+.progress{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-bottom:16px}
+.progress span{display:block;height:100%;background:var(--primary);border-radius:999px}
+.steps{display:none;list-style:none;padding:0;margin:0 0 20px;gap:6px}
+.steps li{flex:1;font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;padding-top:8px;border-top:3px solid var(--border)}
+.steps li.done{color:var(--text);border-color:var(--primary)}
+.steps li[aria-current=step]{color:var(--primary);font-weight:600;border-color:var(--primary)}
+@media (min-width:768px){.steps{display:flex}}
+.save-state{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--match);margin:0}
+.save-state .i{width:16px;height:16px}
+
+/* Upload */
+.drop{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;border:2px dashed var(--border);border-radius:var(--r-lg);padding:24px 16px;background:var(--surface);cursor:pointer}
+.drop:hover{border-color:var(--primary)}
+.drop:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.drop .i{width:32px;height:32px;color:var(--primary)}
+.file-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.file-row .name{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+.chips li{padding:4px 10px;border-radius:999px;background:var(--surface-2);font-size:13px}
+.analysis{border-color:var(--info);border-style:dashed;margin-top:16px}
+ol.tips{margin:0;padding-inline-start:20px}
+ol.tips li{margin-bottom:6px}
+
+/* Definition lists */
+dl.kv{display:grid;grid-template-columns:minmax(110px,40%) 1fr;gap:8px 12px;margin:0;font-size:15px}
+dl.kv dt{color:var(--text-muted)}
+dl.kv dd{margin:0;font-weight:500;overflow-wrap:anywhere;min-width:0}
+.section-title{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:17px}
+.why{list-style:none;padding:0;margin:0}
+.why li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
+.why li:last-child{border-bottom:0}
+.why .ok{color:var(--match)}.why .no{color:var(--near)}
+.two-col{display:grid;gap:16px}
+@media (min-width:900px){.two-col{grid-template-columns:2fr 1fr;align-items:start}.two-col .sticky{position:sticky;top:16px}}
+.two-col>*+*{margin-top:0}
+.two-col .card+.card{margin-top:16px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}
+@media (min-width:768px){.stats{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px}
+.stat .n{font-size:26px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--text-muted)}
+
+/* Responsive table: table on desktop, cards on mobile */
+.rtable{width:100%;border-collapse:collapse;font-size:15px}
+.rtable th{font-size:13px;color:var(--text-muted);font-weight:600;text-align:start;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.rtable td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;overflow-wrap:anywhere}
+.rtable tr:last-child td{border-bottom:0}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow-x:auto}
+@media (max-width:767px){
+  .rtable thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .rtable,.rtable tbody,.rtable tr,.rtable td{display:block;width:100%}
+  .rtable tr{padding:8px 0;border-bottom:1px solid var(--border)}
+  .rtable tr:last-child{border-bottom:0}
+  .rtable td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:6px 14px;text-align:end}
+  .rtable td::before{content:attr(data-label);font-size:13px;font-weight:600;color:var(--text-muted);text-align:start;flex:none;max-width:45%}
+  .rtable td.full{display:block;text-align:start}
+  .rtable td.full::before{display:block;margin-bottom:4px}
+}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+details.diff summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--primary);font-weight:500}
+details.diff pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;background:var(--surface-2);padding:8px 10px;border-radius:var(--r-sm);margin:4px 0;direction:ltr;text-align:left}
+
+/* Tabs */
+[role=tablist]{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+[role=tab]{min-height:44px;padding:8px 14px;border:0;border-bottom:3px solid transparent;background:none;font:inherit;font-weight:500;color:var(--text-muted);cursor:pointer;margin-bottom:-1px}
+[role=tab][aria-selected=true]{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+/* Charts */
+.chart{margin:0}
+.chart figcaption{font-weight:600;margin-bottom:10px}
+.bar-row{margin-bottom:10px}
+.bar-label{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:2px}
+.bar-label .v{font-variant-numeric:tabular-nums;font-weight:600}
+.bar-row svg{display:block;width:100%;height:14px}
+.bar-row.hidden .v{color:var(--text-muted);font-weight:500;font-size:13px}
+.charts{display:grid;gap:16px}
+@media (min-width:900px){.charts{grid-template-columns:1fr 1fr}}
+
+/* Landing */
+.hero{padding:16px 0 8px}
+.hero h1{font-size:30px;max-width:22ch}
+@media (min-width:768px){.hero h1{font-size:40px}}
+.hero p.lead{font-size:18px;color:var(--text-muted);max-width:52ch}
+.how{display:grid;gap:12px;list-style:none;padding:0;margin:24px 0;counter-reset:how}
+@media (min-width:768px){.how{grid-template-columns:repeat(3,1fr)}}
+.how li{counter-increment:how}
+.how li::before{content:counter(how);display:inline-grid;place-items:center;width:32px;height:32px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-weight:700;margin-bottom:8px}
+.timeline{list-style:none;padding:0;margin:0 0 16px}
+.timeline li{display:flex;gap:12px;align-items:center;padding:10px 0}
+.timeline .dot{width:32px;height:32px;border-radius:999px;display:grid;place-items:center;flex:none}
+.timeline .done .dot{background:var(--match-soft);color:var(--match)}
+.timeline .wait .dot{background:var(--near-soft);color:var(--near)}
+.empty{text-align:center;padding:32px 16px;color:var(--text-muted)}
+.empty .i{width:36px;height:36px}
+.muted{color:var(--text-muted)}
+.small{font-size:14px}
+
+/* Dialog & toast */
+dialog{border:0;border-radius:var(--r-xl);padding:0;width:min(520px,calc(100vw - 32px));background:var(--surface);color:var(--text);box-shadow:var(--sh-md)}
+dialog::backdrop{background:rgba(10,20,18,.5)}
+.dlg-body{padding:20px}
+.dlg-body h2{font-size:20px}
+.dlg-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:12px 20px 20px}
+.toast{position:fixed;inset-inline:16px;bottom:16px;margin-inline:auto;max-width:480px;background:var(--text);color:var(--bg);padding:12px 16px;border-radius:var(--r-md);display:flex;gap:10px;align-items:center;box-shadow:var(--sh-md);z-index:60;transform:translateY(150%);visibility:hidden;transition:transform .2s ease,visibility .2s}
+.toast.show{transform:none;visibility:visible}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+footer.app-f{border-top:1px solid var(--border);padding-block:16px;font-size:13px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main" id="skip"></a>
+
+<div class="proto" role="region" id="proto" aria-labelledby="proto-tag">
+  <div class="container">
+    <span class="proto-tag" id="proto-tag"></span>
+    <div class="seg" role="group" id="role-seg" aria-labelledby="proto-tag"></div>
+    <div class="proto-screen">
+      <label for="screen-sel" id="screen-sel-l" class="small"></label>
+      <select id="screen-sel"></select>
+    </div>
+  </div>
+</div>
+
+<header class="app-h" id="app-h"></header>
+<main id="main" tabindex="-1"><div class="container" id="view"></div></main>
+<footer class="app-f"><div class="container" id="foot"></div></footer>
+
+<dialog id="dlg" aria-labelledby="dlg-title"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ======================= Dictionary (Arabic, English) ======================= */
+const T = {
+  pageTitle:['سند: نموذج تفاعلي','Sanad: interactive prototype'],
+  brand:['سَنَد','Sanad'],
+  tagline:['نصل كفاءات أبنائنا بالفرص',"Connecting our people's talent with opportunity"],
+  skip:['تخطَّ إلى المحتوى','Skip to content'],
+  protoTag:['نموذج تفاعلي · بيانات وهمية','Prototype · sample data'],
+  screen:['الشاشة','Screen'],
+  roleSeeker:['الباحث عن عمل','Job seeker'], roleEmployer:['صاحب العمل','Employer'], roleAdmin:['مدير النظام','Admin'],
+  langBtn:['English','العربية'], langAria:['التبديل إلى الإنجليزية','التبديل إلى العربية · Switch to Arabic'],
+  mainNav:['التنقل الرئيسي','Main navigation'],
+  footer:['سند · منصة ربط الكفاءات المهنية · الهوية البصرية مبدئية','Sanad · Professional talent platform · Provisional visual identity'],
+  // screens
+  'S-01':['الرئيسية','Landing'],'S-02':['تسجيل الدخول','Log in'],'S-03':['تسجيل الباحث','Seeker sign-up'],'S-04':['توثيق البريد','Email verification'],
+  'S-05':['معالج الملف (1-5)','Profile wizard (1-5)'],'S-06':['السيرة الذاتية وتحليلها','CV and analysis'],'S-07':['الفرص','Jobs'],'S-08':['تفاصيل الفرصة','Job detail'],
+  'S-09':['طلباتي','My interest requests'],'S-10':['تسجيل صاحب العمل','Employer sign-up'],'S-11':['بانتظار الاعتماد','Pending approval'],
+  'S-12':['لوحة صاحب العمل','Employer dashboard'],'S-13':['نشر فرصة','Post a job'],'S-14':['المهتمون بالفرصة','Applicants'],'S-15':['ملف المهتم','Applicant profile'],
+  'S-16':['إغلاق الفرصة','Close job'],'S-17':['لوحة المدير','Admin dashboard'],'S-18':['اعتماد أصحاب العمل','Employer approvals'],'S-19':['القوائم المرجعية','Lookups'],
+  'S-20':['المستخدمون','Users'],'S-21':['سجل التدقيق','Audit log'],'S-22':['التقارير','Reports'],
+  // nav
+  navJobs:['الفرص','Jobs'],navReq:['طلباتي','My requests'],navProfile:['ملفي','My profile'],navDash:['لوحتي','Dashboard'],navPost:['نشر فرصة','Post a job'],
+  navReports:['التقارير','Reports'],navHome:['الرئيسية','Overview'],navApprovals:['الاعتماد','Approvals'],navLookups:['القوائم','Lookups'],navUsers:['المستخدمون','Users'],
+  navAudit:['السجل','Audit log'],login:['دخول','Log in'],signup:['إنشاء حساب','Sign up'],logout:['خروج','Log out'],
+  // common
+  optional:['اختياري','optional'],next:['التالي','Next'],back:['السابق','Back'],cancel:['إلغاء','Cancel'],save:['حفظ','Save'],
+  later:['أكمل لاحقاً','Finish later'],finish:['إنهاء وعرض الفرص','Finish and see jobs'],yes:['نعم','Yes'],no:['لا','No'],choose:['اختر…','Choose…'],
+  saved:['حُفظ تلقائياً','Saved automatically'],saving:['جارٍ الحفظ…','Saving…'],backTo:['رجوع','Back'],edit:['تعديل','Edit'],
+  male:['ذكر','Male'],female:['أنثى','Female'],yearsUnit:['سنة','years'],status:['الحالة','Status'],date:['التاريخ','Date'],
+  all:['الكل','All'],search:['بحث','Search'],actions:['إجراءات','Actions'],
+  // landing
+  heroTitle:['فرص عمل موثوقة لأبناء مجتمعنا، بخصوصية تامة','Trusted job opportunities for our community, with full privacy'],
+  heroLead:['سجّل كفاءتك مرة واحدة، وتصلك الفرص المناسبة لخبرتك. أصحاب العمل يتواصلون معك بعد أن تبدي اهتمامك.','Register your skills once and see the jobs that fit your experience. Employers contact you only after you express interest.'],
+  ctaSeeker:['سجّل كباحث عن عمل','Join as a job seeker'],ctaEmployer:['سجّل كصاحب عمل','Join as an employer'],haveAccount:['لديك حساب؟','Have an account?'],
+  howTitle:['كيف تعمل المنصة','How it works'],
+  how1t:['أنشئ ملفك','Build your profile'],how1:['خطوات قصيرة تُحفظ تلقائياً، ويمكنك إكمالها لاحقاً.','Short steps that save automatically. Finish any time.'],
+  how2t:['تصفح الفرص','Browse jobs'],how2:['نرتب الفرص حسب ملاءمتها، ونوضح المناسبة والمقاربة.','Jobs are ranked by fit and marked suitable or near match.'],
+  how3t:['ارفع طلب اهتمام','Express interest'],how3:['بعد موافقتك يصل ملفك لصاحب الفرصة ويتواصل معك.','With your consent, the employer receives your profile and contacts you.'],
+  privacyTitle:['خصوصيتك أولاً','Privacy first'],
+  privacyBody:['لا يرى أصحاب العمل بياناتك إلا بعد أن ترفع طلب اهتمام وتوافق. وهوية أصحاب العمل لا تظهر في الفرص، ويراجعهم مدير المنصة قبل النشر.','Employers only see your data after you express interest and consent. Employer identities are never shown on jobs, and every employer is reviewed by an admin before posting.'],
+  sections:['أقسام المنصة','Platform sections'],secJobs:['التوظيف','Employment'],secSoon:['الخدمات الاجتماعية والدورات (قريباً)','Social services and courses (coming later)'],available:['متاح','Available'],
+  // auth
+  loginTitle:['تسجيل الدخول','Log in'],email:['البريد الإلكتروني','Email'],password:['كلمة المرور','Password'],forgot:['نسيت كلمة المرور؟','Forgot password?'],
+  noAccount:['ليس لديك حساب؟','No account yet?'],
+  seekerSignupTitle:['إنشاء حساب باحث عن عمل','Create a job seeker account'],seekerSignupLead:['نرسل رمز تحقق إلى بريدك الشخصي لتفعيل الحساب.','We will send a code to your personal email to activate the account.'],
+  personalEmail:['البريد الإلكتروني الشخصي','Personal email'],pwHint:['8 أحرف على الأقل، تتضمن حرفاً ورقماً.','At least 8 characters, including a letter and a number.'],
+  pw2:['تأكيد كلمة المرور','Confirm password'],
+  consentShare:['أوافق على مشاركة ملفي وسيرتي وبيانات تواصلي مع صاحب العمل فقط عندما أرفع طلب اهتمام على فرصته.','I agree that my profile, CV and contact details are shared with an employer only when I express interest in their job.'],
+  consentTerms:['أوافق على شروط الاستخدام وسياسة الخصوصية.','I agree to the terms of use and privacy policy.'],
+  createAccount:['إنشاء الحساب','Create account'],
+  verifyTitle:['تحقق من بريدك','Check your email'],verifyLead:['أرسلنا رمزاً من 6 أرقام إلى','We sent a 6-digit code to'],code:['رمز التحقق','Verification code'],
+  codeHint:['الرمز صالح 10 دقائق. في النموذج تعمل أي 6 أرقام.','The code is valid for 10 minutes. Any 6 digits work in this prototype.'],
+  verify:['تأكيد','Verify'],resendIn:['إعادة الإرسال بعد','Resend in'],resend:['إعادة إرسال الرمز','Resend code'],changeEmail:['تغيير البريد','Change email'],
+  codeSent:['أُرسل رمز جديد','A new code was sent'],
+  // wizard
+  wizTitle:['ملفي المهني','My professional profile'],stepOf:['الخطوة {n} من 6','Step {n} of 6'],
+  st1:['البيانات الشخصية','Personal'],st2:['الدار والفخذ','Affiliation'],st3:['التواصل','Contact'],st4:['التعليم','Education'],st5:['الخبرات','Experience'],st6:['السيرة الذاتية','CV'],
+  fullName:['الاسم الرباعي','Full name (four parts)'],first:['الاسم الأول','First name'],father:['اسم الأب','Father'],grand:['اسم الجد','Grandfather'],family:['اسم العائلة','Family name'],
+  idType:['نوع الهوية','ID type'],nationalId:['هوية وطنية','National ID'],passport:['جواز سفر','Passport'],idNo:['رقم الهوية الوطنية','National ID number'],passNo:['رقم الجواز','Passport number'],
+  idHint:['يُحفظ مشفراً ولا يُعرض لأصحاب العمل.','Stored encrypted and never shown to employers.'],
+  gender:['الجنس','Gender'],birth:['تاريخ الميلاد','Date of birth'],age:['العمر','Age'],ageAuto:['يُحسب تلقائياً','Calculated automatically'],
+  nationality:['الجنسية','Nationality'],needs:['هل لديك احتياجات خاصة؟','Do you have special needs?'],
+  dar:['الدار','Dar'],fakhdh:['الفخذ','Fakhdh (clan)'],affHint:['القائمتان تعدّهما إدارة المنصة. إن لم تجد ما يخصك تواصل مع الإدارة.','Both lists are maintained by the platform admins. Contact them if yours is missing.'],
+  mobile:['رقم الجوال','Mobile number'],contactHint:['لا يراها صاحب العمل إلا بعد أن ترفع طلب اهتمام على فرصته.','Employers see these only after you express interest in their job.'],
+  eduLevel:['المستوى التعليمي','Education level'],gradYear:['سنة التخرج','Graduation year'],inst:['الجهة التعليمية','Institution'],gradCountry:['دولة التخرج','Country of graduation'],
+  hasExp:['هل لديك خبرة عمل سابقة؟','Do you have previous work experience?'],expYears:['عدد سنوات الخبرة','Years of experience'],
+  pos1:['المنصب 1','Position 1'],pos2:['المنصب 2','Position 2'],posTitle:['المسمى الوظيفي','Job title'],from:['من','From'],to:['إلى','To'],current:['ما زلت في هذا المنصب','I currently hold this position'],
+  verifier:['جهة التواصل للتحقق من الخبرة','Experience verification contact'],verifierHint:['اسم ورقم أو بريد شخص يستطيع تأكيد خبرتك.','Name and phone or email of someone who can confirm your experience.'],
+  cvTitle:['السيرة الذاتية','Your CV'],cvLead:['ارفع سيرتك لتحسين مطابقة الفرص.','Upload your CV to improve job matching.'],
+  dropText:['اختر ملف السيرة','Choose your CV file'],dropHint:['PDF أو Word، بحد أقصى 10MB','PDF or Word, up to 10MB'],replace:['استبدال','Replace'],remove:['حذف','Remove'],uploaded:['تم الرفع','Uploaded'],
+  analysisTitle:['تحليل السيرة','CV analysis'],whenActive:['متاح عند التفعيل','Available when activated'],
+  analysisNote:['هذه معاينة لما سيظهر عند تفعيل التحليل الآلي. حالياً تُحفظ سيرتك فقط، والمطابقة تعمل على بياناتك المدخلة.','This previews what appears once automated analysis is activated. For now your CV is saved and matching uses the data you entered.'],
+  suggestedSector:['القطاع المقترح','Suggested sector'],sectorFix:['يمكنك تصحيحه إن لم يكن دقيقاً.','You can correct it if it is not accurate.'],
+  skills:['المهارات المستخرجة','Extracted skills'],inferredYears:['سنوات الخبرة المستنتجة','Inferred years of experience'],tips:['نصائح لتطوير مهاراتك','Tips to grow your skills'],
+  laterToast:['حُفظ ملفك، يمكنك إكماله لاحقاً من "ملفي".','Your profile is saved. Finish it any time from "My profile".'],
+  doneToast:['اكتمل ملفك. هذه الفرص مرتبة حسب ملاءمتها لك.','Profile complete. Jobs are ranked by how well they fit you.'],
+  // jobs
+  jobsTitle:['الفرص المتاحة','Available jobs'],jobsLead:['مرتبة حسب ملاءمتها لملفك.','Ranked by how well they fit your profile.'],
+  anonNote:['لحماية الطرفين لا تُعرض هوية صاحب العمل في الفرص. يتواصل معك مباشرة بعد طلب الاهتمام.','To protect both sides, employer identity is not shown on jobs. The employer contacts you after you express interest.'],
+  searchJobs:['ابحث في المسميات','Search job titles'],sector:['القطاع','Sector'],allSectors:['كل القطاعات','All sectors'],fitOnly:['المناسبة والمقاربة فقط','Suitable and near matches only'],
+  suitable:['مناسبة','Suitable'],nearMatch:['مقاربة','Near match'],fitScore:['درجة الملاءمة','fit score'],
+  legendS:['مناسبة: 70 فأكثر','Suitable: 70+'],legendN:['مقاربة: 45 إلى 69','Near match: 45 to 69'],
+  location:['الموقع','Location'],minExp:['الخبرة','Experience'],expN:['{n}+ سنة خبرة','{n}+ years'],noExp:['لا تشترط خبرة','No experience required'],
+  posted:['نُشرت','Posted'],details:['عرض التفاصيل','View details'],sent:['أُرسل طلب الاهتمام','Interest sent'],
+  noJobs:['لا توجد فرص تطابق البحث.','No jobs match your search.'],resultsN:['{n} فرصة','{n} jobs'],
+  about:['عن الفرصة','About the job'],reqs:['المتطلبات','Requirements'],whyTitle:['لماذا تظهر لك بهذه الدرجة','Why this fit score'],
+  whySector:['القطاع يطابق خبرتك','Sector matches your experience'],whySectorNo:['القطاع مختلف عن خبرتك','Sector differs from your experience'],
+  whyEdu:['مؤهلك يحقق المستوى المطلوب','Your education meets the requirement'],whyEduNo:['المؤهل المطلوب أعلى من مؤهلك','Required education is above yours'],
+  whyExp:['سنوات خبرتك تحقق المطلوب','Your experience meets the requirement'],whyExpNo:['الخبرة المطلوبة أكثر من خبرتك','Required experience exceeds yours'],
+  interestBtn:['طلب اهتمام','Express interest'],interestHelp:['يصل ملفك لصاحب الفرصة بعد موافقتك، ويتواصل معك إن رآه مناسباً.','With your consent, your profile goes to the employer, who contacts you if it fits.'],
+  dlgInterestTitle:['تأكيد طلب الاهتمام','Confirm interest request'],dlgInterestLead:['سيُرسل إلى صاحب هذه الفرصة:','The employer of this job will receive:'],
+  shareProfile:['ملفك المهني: الاسم، العمر، التعليم، الخبرات','Your profile: name, age, education, experience'],shareCv:['سيرتك الذاتية','Your CV'],shareContact:['رقم جوالك وبريدك','Your mobile number and email'],
+  dlgInterestNote:['لن تظهر لك هوية صاحب العمل. لا يُرسل رقم هويتك ولا الدار والفخذ.','The employer identity stays hidden. Your ID number, dar and fakhdh are not sent.'],
+  agreeShare:['أوافق على مشاركة هذه البيانات مع صاحب هذه الفرصة','I agree to share this data with the employer of this job'],
+  sendRequest:['إرسال الطلب','Send request'],interestToast:['أُرسل طلب الاهتمام. سيتواصل معك صاحب الفرصة إن رأى ملفك مناسباً.','Interest sent. The employer will contact you if your profile fits.'],
+  sentState:['أرسلت طلب اهتمام على هذه الفرصة. تابع حالته من "طلباتي".','You expressed interest in this job. Track it in "My requests".'],
+  myReqTitle:['طلبات الاهتمام','My interest requests'],myReqLead:['الفرص التي أبديت اهتمامك بها وحالتها.','Jobs you expressed interest in and their status.'],
+  reqSent:['أُرسل لصاحب الفرصة','Sent to employer'],reqClosed:['الفرصة لم تعد متوفرة','No longer available'],requestedOn:['تاريخ الطلب','Requested on'],
+  noReqs:['لم ترفع أي طلب اهتمام بعد.','You have not expressed interest in any job yet.'],browseJobs:['تصفح الفرص','Browse jobs'],
+  // employer
+  empSignupTitle:['إنشاء حساب صاحب عمل','Create an employer account'],empName:['الاسم','Name'],org:['المؤسسة','Organization'],phone:['رقم التواصل','Contact number'],
+  empSignupNote:['يراجع مدير المنصة حسابك قبل نشر أول فرصة. اسمك ومؤسستك وبيانات تواصلك لا تظهر للباحثين أبداً.','An admin reviews your account before your first job goes live. Your name, organization and contact details are never shown to job seekers.'],
+  pendingTitle:['حسابك بانتظار الاعتماد','Your account is pending approval'],pendingLead:['يراجع مدير المنصة بياناتك، وسنرسل لك بريداً عند الاعتماد.','An admin is reviewing your details. We will email you once approved.'],
+  tlCreated:['إنشاء الحساب','Account created'],tlVerified:['توثيق البريد','Email verified'],tlReview:['مراجعة المدير','Admin review'],inProgress:['قيد المراجعة','In review'],
+  postDisabled:['يتاح نشر الفرص بعد اعتماد حسابك.','You can post jobs once your account is approved.'],simulateApprove:['محاكاة اعتماد المدير (للعرض فقط)','Simulate admin approval (demo only)'],
+  approvedToast:['اعتُمد حسابك. يمكنك نشر الفرص الآن.','Your account is approved. You can post jobs now.'],
+  empDashTitle:['لوحة صاحب العمل','Employer dashboard'],openJobs:['فرص متاحة','Open jobs'],interestReqs:['طلبات اهتمام','Interest requests'],hiredVia:['توظيف عبر المنصة','Hired via platform'],
+  myJobs:['فرصي','My jobs'],newJob:['نشر فرصة جديدة','Post a new job'],jobTitle:['المسمى','Title'],applicants:['المهتمون','Applicants'],close:['إغلاق','Close'],
+  stOpen:['متاحة','Open'],stClosed:['غير متوفرة','Unavailable'],outHired:['تم التوظيف عبر المنصة','Hired via platform'],outNone:['أغلقت دون توظيف','Closed without hiring'],
+  postTitle:['نشر فرصة','Post a job'],postNote:['لا يظهر اسمك ولا اسم مؤسستك للباحثين. يرون المسمى والقطاع والموقع والمتطلبات فقط.','Job seekers never see your name or organization. They see only the title, sector, location and requirements.'],
+  city:['المدينة','City'],country:['الدولة','Country'],reqEdu:['المستوى التعليمي المطلوب','Required education level'],reqYears:['أقل عدد سنوات خبرة','Minimum years of experience'],
+  desc:['الوصف والمتطلبات','Description and requirements'],descHint:['اكتب المهام والمهارات المطلوبة. تُستخدم الكلمات في المطابقة.','Describe duties and skills. Keywords are used for matching.'],publish:['نشر الفرصة','Publish job'],
+  publishedToast:['نُشرت الفرصة وأصبحت متاحة للباحثين.','Job published and visible to job seekers.'],
+  applicantsTitle:['المهتمون بالفرصة','Applicants'],applicantsNote:['تظهر لك بيانات هؤلاء لأنهم رفعوا طلب اهتمام ووافقوا على المشاركة. تواصل معهم مباشرة.','You can see these people because they expressed interest and consented to sharing. Contact them directly.'],
+  viewProfile:['عرض الملف','View profile'],noApplicants:['لا توجد طلبات اهتمام بعد.','No interest requests yet.'],
+  contact:['التواصل','Contact'],call:['اتصال','Call'],sendEmail:['مراسلة','Email'],cv:['السيرة الذاتية','CV'],openCv:['فتح السيرة','Open CV'],cvLinkHint:['رابط مؤقت صالح 5 دقائق.','Temporary link, valid for 5 minutes.'],
+  personal:['البيانات الشخصية','Personal details'],education:['التعليم','Education'],experience:['الخبرات','Experience'],currentNow:['حتى الآن','Present'],
+  closeTitle:['إغلاق الفرصة','Close job'],outcome:['نتيجة الفرصة','Outcome'],pickHired:['الباحث الذي تم توظيفه','Hired candidate'],
+  closeWarn:['بعد الإغلاق تصبح الفرصة "غير متوفرة" ولا تقبل طلبات اهتمام جديدة.','After closing, the job becomes "Unavailable" and accepts no new interest requests.'],
+  confirmClose:['تأكيد الإغلاق','Confirm closing'],closedToast:['أُغلقت الفرصة وسُجلت النتيجة.','Job closed and outcome recorded.'],
+  // admin
+  adminTitle:['لوحة المدير','Admin overview'],seekers:['الباحثون','Job seekers'],employersApproved:['أصحاب عمل معتمدون','Approved employers'],pendingN:['بانتظار الاعتماد','Pending approval'],
+  pendingCard:['طلبات اعتماد معلّقة','Pending employer approvals'],reviewNow:['مراجعة الطلبات','Review requests'],recentAudit:['آخر العمليات','Recent activity'],viewAll:['عرض الكل','View all'],
+  approvalsTitle:['اعتماد أصحاب العمل','Employer approvals'],approvalsNote:['بيانات أصحاب العمل سرية ولا يطّلع عليها إلا مدراء النظام.','Employer details are confidential and visible to admins only.'],
+  registered:['تاريخ التسجيل','Registered'],emailVerified:['البريد موثّق','Email verified'],approve:['اعتماد','Approve'],reject:['رفض','Reject'],
+  rejectTitle:['رفض طلب صاحب العمل','Reject employer request'],rejectReason:['سبب الرفض','Reason for rejection'],rejectHint:['يُرسل للمتقدم في بريد الرفض.','Sent to the applicant in the rejection email.'],
+  approvedA:['اعتُمد الحساب وأُرسل بريد لصاحب العمل.','Account approved and the employer was emailed.'],rejectedA:['رُفض الطلب وسُجل في السجل.','Request rejected and logged.'],noPending:['لا توجد طلبات معلّقة.','No pending requests.'],
+  lookupsTitle:['القوائم المرجعية','Lookup lists'],lookupsLead:['تظهر هذه القوائم للمستخدمين بالعربية أو الإنجليزية حسب لغتهم.','Users see these lists in Arabic or English depending on their language.'],
+  tabDar:['الديار','Dars'],tabFakhdh:['الأفخاذ','Fakhdhs'],tabSector:['القطاعات','Sectors'],tabEdu:['المستويات التعليمية','Education levels'],
+  nameAr:['الاسم بالعربية','Arabic name'],nameEn:['الاسم بالإنجليزية','English name'],add:['إضافة','Add'],addItem:['إضافة عنصر','Add item'],
+  active:['مفعّل','Active'],inactive:['معطّل','Inactive'],disable:['تعطيل','Disable'],enable:['تفعيل','Enable'],editItem:['تعديل العنصر','Edit item'],
+  addedToast:['أُضيف العنصر.','Item added.'],updatedToast:['حُفظ التعديل.','Changes saved.'],
+  usersTitle:['المستخدمون','Users'],role:['الدور','Role'],allRoles:['كل الأدوار','All roles'],name:['الاسم','Name'],uActive:['نشط','Active'],uPending:['بانتظار الاعتماد','Pending'],uSuspended:['موقوف','Suspended'],
+  searchUsers:['ابحث بالاسم أو البريد','Search name or email'],view:['عرض','View'],
+  auditTitle:['سجل التدقيق','Audit log'],auditNote:['السجل للقراءة فقط، ولا يستطيع أحد تعديله أو حذفه. الحقول المشفرة تظهر مخفية.','Read-only: nobody can edit or delete entries. Encrypted fields are masked.'],
+  user:['المستخدم','User'],action:['العملية','Action'],entity:['الجدول','Table'],recordId:['معرّف السجل','Record ID'],time:['الوقت','Time'],ip:['IP','IP'],
+  fromDate:['من تاريخ','From date'],toDate:['إلى تاريخ','To date'],allActions:['كل العمليات','All actions'],allTables:['كل الجداول','All tables'],
+  aCreate:['إنشاء','Create'],aUpdate:['تعديل','Update'],aDelete:['حذف','Delete'],aLogin:['دخول','Login'],aLoginFail:['دخول فاشل','Failed login'],aApprove:['اعتماد','Approve'],
+  beforeAfter:['القيم قبل وبعد','Before and after'],before:['قبل','Before'],after:['بعد','After'],noRows:['لا توجد نتائج.','No results.'],
+  reportsTitle:['التقارير','Reports'],reportsLead:['إحصائيات مجمّعة لا تحتوي أي بيانات شخصية.','Aggregated statistics with no personal data.'],
+  under5:['أي فئة عددها أقل من 5 أشخاص تُخفى لحماية الخصوصية.','Any group with fewer than 5 people is hidden to protect privacy.'],
+  hiddenLt5:['مخفية (أقل من 5)','Hidden (fewer than 5)'],
+  seekerStats:['الباحثون','Job seekers'],jobStats:['الفرص','Jobs'],totalSeekers:['إجمالي الباحثين','Total job seekers'],
+  byAge:['حسب العمر','By age'],byGender:['حسب الجنس','By gender'],byEdu:['حسب المستوى التعليمي','By education level'],byExp:['حسب الخبرة','By experience'],
+  withExp:['لديهم خبرة','With experience'],withoutExp:['بلا خبرة','Without experience'],totalJobs:['إجمالي الفرص','Total jobs'],
+  bySector:['حسب القطاع','By sector'],byStatus:['حسب الحالة','By status'],empReportsNote:['تقارير عامة مجمّعة، وأرقام فرصك أدناه.','General aggregated reports, plus figures for your own jobs below.'],
+  myJobsStats:['أرقام فرصي','My jobs in numbers'],
+};
+function t(k,vars){const v=T[k];if(!v){console.warn('i18n missing:',k);return k;}let s=v[S.lang==='ar'?0:1];if(vars)for(const n in vars)s=s.replace('{'+n+'}',vars[n]);return s;}
+function L(v){return Array.isArray(v)?v[S.lang==='ar'?0:1]:(v??'');}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ======================= Sample data (fictional) ======================= */
+const LK={
+  dar:[[ 'دار الشمال','North Dar',1],['دار الوسط','Central Dar',1],['دار الجنوب','South Dar',1]],
+  fakhdh:[['آل سالم','Al Salem',1],['آل راشد','Al Rashed',1],['آل حمد','Al Hamad',1],['آل ناصر','Al Nasser',0]],
+  sector:[['تقنية المعلومات','Information technology',1],['المالية والمحاسبة','Finance and accounting',1],['الموارد البشرية','Human resources',1],['الصحة','Healthcare',1],['الهندسة والإنشاءات','Engineering and construction',1],['التعليم والتدريب','Education and training',1],['المبيعات والتسويق','Sales and marketing',1],['اللوجستيات','Logistics',1]],
+  edu:[['ثانوي','High school',1],['دبلوم','Diploma',1],['بكالوريوس',"Bachelor's",1],['ماجستير',"Master's",1],['دكتوراه','Doctorate',1]],
+};
+const COUNTRIES={SA:['السعودية','Saudi Arabia'],AE:['الإمارات','UAE'],KW:['الكويت','Kuwait'],QA:['قطر','Qatar'],BH:['البحرين','Bahrain'],OM:['عُمان','Oman'],JO:['الأردن','Jordan'],EG:['مصر','Egypt'],GB:['المملكة المتحدة','United Kingdom'],US:['الولايات المتحدة','United States']};
+const lk=(type,i)=>LK[type][i]?L([LK[type][i][0],LK[type][i][1]]):'';
+
+/* Jobs. `owner` lives only in the server-side record; seeker screens use publicJob() which has no employer fields (mirrors the seeker DTO). */
+const JOBS=[
+  {id:1,owner:'e1',title:['محلل بيانات','Data Analyst'],sector:0,city:['الرياض','Riyadh'],country:'SA',edu:2,years:2,posted:'2026-10-22',score:86,status:'open',why:[1,1,1],
+   desc:['تحليل بيانات التشغيل وبناء لوحات متابعة أسبوعية للإدارات، والتعاون مع فريق المنتج لتحديد المؤشرات.','Analyse operational data, build weekly dashboards for departments, and work with the product team to define KPIs.'],
+   reqs:[['خبرة في SQL وأداة تقارير مثل Power BI','SQL and a reporting tool such as Power BI'],['مهارة عرض النتائج بوضوح','Clear presentation of findings'],['إجادة العربية والإنجليزية','Arabic and English']]},
+  {id:2,owner:'e1',title:['مطور واجهات أمامية','Front-end Developer'],sector:0,city:['جدة','Jeddah'],country:'SA',edu:2,years:3,posted:'2026-10-19',score:74,status:'open',why:[1,1,1],
+   desc:['تطوير واجهات ويب متجاوبة تدعم العربية والإنجليزية.','Build responsive web interfaces supporting Arabic and English.'],reqs:[['خبرة في React أو Next.js','React or Next.js experience'],['فهم إمكانية الوصول','Accessibility awareness']]},
+  {id:3,owner:'e2',title:['محاسب','Accountant'],sector:1,city:['الدمام','Dammam'],country:'SA',edu:2,years:2,posted:'2026-10-21',score:58,status:'open',why:[0,1,1],
+   desc:['إعداد القيود اليومية والتسويات البنكية والتقارير الشهرية.','Prepare daily entries, bank reconciliations and monthly reports.'],reqs:[['بكالوريوس محاسبة','Accounting degree'],['معرفة بأنظمة ERP','ERP systems knowledge']]},
+  {id:4,owner:'e3',title:['منسق موارد بشرية','HR Coordinator'],sector:2,city:['الرياض','Riyadh'],country:'SA',edu:1,years:1,posted:'2026-10-15',score:52,status:'open',why:[0,1,1],
+   desc:['تنسيق المقابلات وملفات الموظفين وبرامج التهيئة.','Coordinate interviews, employee files and onboarding.'],reqs:[['مهارات تنظيم وتواصل','Organisation and communication skills']]},
+  {id:5,owner:'e2',title:['مهندس شبكات','Network Engineer'],sector:4,city:['دبي','Dubai'],country:'AE',edu:2,years:5,posted:'2026-10-12',score:31,status:'open',why:[0,1,0],
+   desc:['تصميم وصيانة شبكات المؤسسة.','Design and maintain enterprise networks.'],reqs:[['شهادة CCNA','CCNA certification']]},
+  {id:6,owner:'e3',title:['أخصائي مبيعات','Sales Specialist'],sector:6,city:['أبها','Abha'],country:'SA',edu:0,years:0,posted:'2026-10-10',score:40,status:'open',why:[0,1,1],
+   desc:['التواصل مع العملاء وتحقيق المستهدفات الشهرية.','Engage customers and meet monthly targets.'],reqs:[['مهارات إقناع','Persuasion skills']]},
+  {id:7,owner:'e1',title:['مصمم تجربة مستخدم','UX Designer'],sector:0,city:['الرياض','Riyadh'],country:'SA',edu:2,years:2,posted:'2026-09-01',score:0,status:'closed',outcome:'hired',hired:'s2',why:[1,1,1],desc:['',''],reqs:[]},
+  {id:8,owner:'e2',title:['مساعد إداري','Administrative Assistant'],sector:2,city:['الرياض','Riyadh'],country:'SA',edu:1,years:0,posted:'2026-09-10',score:0,status:'closed',outcome:'none',why:[1,1,1],desc:['',''],reqs:[]},
+];
+function publicJob(j){const {id,title,sector,city,country,edu,years,posted,score,status,why,desc,reqs}=j;return {id,title,sector,city,country,edu,years,posted,score,status,why,desc,reqs};}
+
+const EMP={e1:{name:['سارة الحربي','Sarah Al-Harbi'],org:['شركة مدار للحلول الرقمية','Madar Digital Solutions']}};
+const PEOPLE={
+  s1:{name:['خالد عبدالله محمد السالم','Khaled Abdullah Mohammed Al-Salem'],age:28,gender:'m',nat:'SA',needs:0,edu:2,inst:['جامعة الملك سعود','King Saud University'],grad:2020,gradC:'SA',years:3,
+      pos:[{t:['محلل تقارير','Reporting Analyst'],f:'2023-07',to:''},{t:['محلل بيانات مساعد','Junior Data Analyst'],f:'2021-09',to:'2023-06'}],ver:['م. فهد الدوسري · 0509876543','Eng. Fahad Al-Dosari · 0509876543'],phone:'0551234567',email:'khaled.salem@example.com',cv:'Khaled_AlSalem_CV.pdf'},
+  s2:{name:['نورة سعد علي الفهد','Noura Saad Ali Al-Fahad'],age:26,gender:'f',nat:'SA',needs:0,edu:3,inst:['جامعة الأميرة نورة','Princess Nourah University'],grad:2023,gradC:'SA',years:2,
+      pos:[{t:['محللة أعمال','Business Analyst'],f:'2023-09',to:''}],ver:['أ. منى العتيبي · mona@example.com','Ms. Mona Al-Otaibi · mona@example.com'],phone:'0567654321',email:'noura.fahad@example.com',cv:'Noura_AlFahad_CV.pdf'},
+  s3:{name:['فيصل ناصر عمر العمري','Faisal Nasser Omar Al-Omari'],age:31,gender:'m',nat:'SA',needs:1,edu:1,inst:['الكلية التقنية بالرياض','Riyadh Technical College'],grad:2015,gradC:'SA',years:6,
+      pos:[{t:['أخصائي دعم فني','IT Support Specialist'],f:'2018-02',to:''},{t:['فني حاسب','Computer Technician'],f:'2016-01',to:'2018-01'}],ver:['أ. سامي الغامدي · 0543332211','Mr. Sami Al-Ghamdi · 0543332211'],phone:'0543219876',email:'faisal.omari@example.com',cv:'Faisal_AlOmari_CV.pdf'},
+  s4:{name:['ريم خالد سعيد القحطاني','Reem Khaled Saeed Al-Qahtani'],age:24,gender:'f',nat:'SA',needs:0,edu:2,inst:['جامعة الإمام عبدالرحمن','Imam Abdulrahman University'],grad:2024,gradC:'SA',years:1,
+      pos:[{t:['متدربة تحليل بيانات','Data Analysis Trainee'],f:'2024-08',to:'2025-07'}],ver:['د. هند الشمري · hind@example.com','Dr. Hind Al-Shammari · hind@example.com'],phone:'0598887766',email:'reem.q@example.com',cv:'Reem_AlQahtani_CV.pdf'},
+};
+const APPS={1:[{s:'s1',score:86,d:'2026-10-23'},{s:'s2',score:78,d:'2026-10-23'},{s:'s4',score:72,d:'2026-10-24'},{s:'s3',score:61,d:'2026-10-25'}],2:[{s:'s1',score:74,d:'2026-10-20'},{s:'s4',score:66,d:'2026-10-21'}],7:[{s:'s2',score:81,d:'2026-09-05'},{s:'s4',score:70,d:'2026-09-06'}]};
+let PENDING=[
+  {id:'p1',name:['عبدالرحمن الشهري','Abdulrahman Al-Shehri'],org:['مؤسسة الأفق للمقاولات','Al-Ofuq Contracting'],sector:4,email:'a.shehri@ofuq.example',phone:'0532221100',d:'2026-10-25'},
+  {id:'p2',name:['هيفاء الزهراني','Haifa Al-Zahrani'],org:['مجموعة رعاية الطبية','Reaya Medical Group'],sector:3,email:'hr@reaya.example',phone:'0126654400',d:'2026-10-24'},
+  {id:'p3',name:['ماجد البقمي','Majed Al-Buqami'],org:['أكاديمية نماء للتدريب','Namaa Training Academy'],sector:5,email:'majed@namaa.example',phone:'0551002003',d:'2026-10-24'},
+];
+const USERS=[
+  {n:['خالد السالم','Khaled Al-Salem'],r:'seeker',e:'khaled.salem@example.com',s:'active',d:'2026-10-02'},
+  {n:['نورة الفهد','Noura Al-Fahad'],r:'seeker',e:'noura.fahad@example.com',s:'active',d:'2026-09-28'},
+  {n:['فيصل العمري','Faisal Al-Omari'],r:'seeker',e:'faisal.omari@example.com',s:'active',d:'2026-09-20'},
+  {n:['ريم القحطاني','Reem Al-Qahtani'],r:'seeker',e:'reem.q@example.com',s:'suspended',d:'2026-09-15'},
+  {n:['سارة الحربي','Sarah Al-Harbi'],r:'employer',e:'sarah@madar.example',s:'active',d:'2026-08-30'},
+  {n:['عبدالرحمن الشهري','Abdulrahman Al-Shehri'],r:'employer',e:'a.shehri@ofuq.example',s:'pending',d:'2026-10-25'},
+  {n:['هيفاء الزهراني','Haifa Al-Zahrani'],r:'employer',e:'hr@reaya.example',s:'pending',d:'2026-10-24'},
+  {n:['تركي المطيري','Turki Al-Mutairi'],r:'admin',e:'turki@sanad.example',s:'active',d:'2026-08-01'},
+  {n:['لمى الدوسري','Lama Al-Dosari'],r:'admin',e:'lama@sanad.example',s:'active',d:'2026-08-01'},
+];
+const AUDIT=[
+  {tm:'2026-10-26 09:14',u:['تركي المطيري','Turki Al-Mutairi'],r:'admin',a:'approve',e:'employers',id:'emp_0192',ip:'10.0.4.21',b:'{ "status": "pending" }',af:'{ "status": "approved" }'},
+  {tm:'2026-10-26 08:57',u:['خالد السالم','Khaled Al-Salem'],r:'seeker',a:'create',e:'interest_requests',id:'int_5531',ip:'94.98.12.40',b:'null',af:'{ "jobId": "job_0001", "consent": true }'},
+  {tm:'2026-10-26 08:40',u:['خالد السالم','Khaled Al-Salem'],r:'seeker',a:'update',e:'people',id:'per_2210',ip:'94.98.12.40',b:'{ "nationalId": "••••••", "phone": "0550000000" }',af:'{ "nationalId": "••••••", "phone": "0551234567" }'},
+  {tm:'2026-10-26 08:31',u:['غير معروف','Unknown'],r:'-',a:'loginFail',e:'sessions',id:'-',ip:'185.22.7.9',b:'null',af:'{ "email": "s***@madar.example" }'},
+  {tm:'2026-10-25 17:02',u:['سارة الحربي','Sarah Al-Harbi'],r:'employer',a:'update',e:'jobs',id:'job_0007',ip:'31.166.2.8',b:'{ "status": "open" }',af:'{ "status": "closed", "outcome": "hired" }'},
+  {tm:'2026-10-25 16:45',u:['سارة الحربي','Sarah Al-Harbi'],r:'employer',a:'create',e:'jobs',id:'job_0001',ip:'31.166.2.8',b:'null',af:'{ "title": "Data Analyst", "sectorId": "sec_it" }'},
+  {tm:'2026-10-25 11:20',u:['لمى الدوسري','Lama Al-Dosari'],r:'admin',a:'create',e:'lookups',id:'fkh_0004',ip:'10.0.4.22',b:'null',af:'{ "nameAr": "آل ناصر", "nameEn": "Al Nasser" }'},
+  {tm:'2026-10-25 11:05',u:['لمى الدوسري','Lama Al-Dosari'],r:'admin',a:'delete',e:'lookups',id:'sec_0011',ip:'10.0.4.22',b:'{ "nameEn": "Misc" }',af:'{ "deletedAt": "2026-10-25T11:05Z" }'},
+  {tm:'2026-10-25 08:00',u:['تركي المطيري','Turki Al-Mutairi'],r:'admin',a:'login',e:'sessions',id:'ses_9012',ip:'10.0.4.21',b:'null',af:'null'},
+];
+
+/* ======================= State ======================= */
+const S={lang:'ar',role:'seeker',screen:'S-01',step:1,jobId:1,seekerId:'s1',verifyFor:'seeker',empApproved:false,lookupTab:'dar',
+  jobQ:'',jobSector:'',fitOnly:false,userQ:'',userRole:'',audit:{u:'',a:'',e:'',f:'',to:''},
+  p:{first:['خالد','Khaled'],father:['عبدالله','Abdullah'],grand:['محمد','Mohammed'],family:['السالم','Al-Salem'],idType:'national',idNo:'1012345678',gender:'m',birth:'1998-04-12',nat:'SA',needs:'no',
+     dar:'0',fakhdh:'0',phone:'0551234567',email:'khaled.salem@example.com',edu:'2',grad:'2020',inst:['جامعة الملك سعود','King Saud University'],gradC:'SA',
+     hasExp:'yes',years:'3',p1:{t:['محلل بيانات مساعد','Junior Data Analyst'],f:'2021-09',to:'2023-06'},p2:{t:['محلل تقارير','Reporting Analyst'],f:'2023-07',to:'',cur:true},
+     ver:['م. فهد الدوسري · 0509876543','Eng. Fahad Al-Dosari · 0509876543'],cv:null,cvSector:'0'},
+  myReqs:[{job:4,d:'2026-10-16'},{job:8,d:'2026-09-12'}],
+  newEmail:'khaled.salem@example.com',
+};
+const ROLE_SCREENS={seeker:['S-01','S-02','S-03','S-04','S-05','S-06','S-07','S-08','S-09'],employer:['S-10','S-02','S-04','S-11','S-12','S-13','S-14','S-15','S-16','S-22'],admin:['S-02','S-17','S-18','S-19','S-20','S-21','S-22']};
+const ROLE_HOME={seeker:'S-01',employer:'S-12',admin:'S-17'};
+
+/* ======================= Icons ======================= */
+const IC={
+  check:'<path d="M20 6 9 17l-5-5"/>',approx:'<path d="M4 9.5c2.7-2.2 5.3-2.2 8 0s5.3 2.2 8 0M4 15.5c2.7-2.2 5.3-2.2 8 0s5.3 2.2 8 0"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',shield:'<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  upload:'<path d="M12 16V4m0 0-5 5m5-5 5 5M4 20h16"/>',file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',chev:'<path d="m9 6 6 6-6 6"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
+  pin:'<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',cap:'<path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  warn:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+};
+const icon=(n,cls='')=>`<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${IC[n]}</svg>`;
+const LOGO=`<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10" fill="var(--primary)"/><path d="M9 21c3-6 15-6 18 0" stroke="var(--on-primary)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M13 25c2-3 8-3 10 0" stroke="var(--accent)" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="18" cy="12" r="3" fill="var(--on-primary)"/></svg>`;
+
+/* ======================= Helpers ======================= */
+const $=s=>document.querySelector(s);
+const fmtDate=iso=>{if(!iso)return '';const [y,m,dd]=iso.split('-').map(Number);const d=new Date(y,m-1,dd||1);const o=iso.length===7?{month:'short',year:'numeric'}:{day:'numeric',month:'short',year:'numeric'};return new Intl.DateTimeFormat(S.lang==='ar'?'ar-u-ca-gregory-nu-latn':'en-GB',o).format(d);};
+const num=n=>new Intl.NumberFormat(S.lang==='ar'?'ar-u-nu-latn':'en').format(n);
+function getPath(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o);}
+function setPath(o,p,v){const k=p.split('.');let a=o;for(let i=0;i<k.length-1;i++)a=a[k[i]];a[k[k.length-1]]=v;}
+const val=p=>esc(L(getPath(S.p,p)));
+function ageFrom(iso){if(!iso)return null;const b=new Date(iso),n=new Date();let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a>=0&&a<120?a:null;}
+const lkOpts=(type)=>LK[type].map((x,i)=>[String(i),L([x[0],x[1]]),x[2]]).filter(x=>x[2]);
+const countryOpts=()=>Object.keys(COUNTRIES).map(c=>[c,L(COUNTRIES[c])]);
+
+function field({id,label,bind,type='text',req=true,hint,attrs='',value,cls=''}){
+  const v=value!==undefined?esc(value):(bind?val(bind):'');
+  return `<div class="field"><label for="${id}">${label}${req?'':` <span class="opt">(${t('optional')})</span>`}</label>
+  ${hint?`<p class="hint" id="${id}-h">${hint}</p>`:''}
+  <input id="${id}" name="${id}" type="${type}" class="${cls}" ${bind?`data-bind="${bind}"`:''} value="${v}" ${req?'required':''} ${hint?`aria-describedby="${id}-h"`:''} ${attrs}></div>`;
+}
+function selectField({id,label,bind,options,req=true,hint,value,attrs=''}){
+  const cur=value!==undefined?value:(bind?String(getPath(S.p,bind)??''):'');
+  return `<div class="field"><label for="${id}">${label}${req?'':` <span class="opt">(${t('optional')})</span>`}</label>
+  ${hint?`<p class="hint" id="${id}-h">${hint}</p>`:''}
+  <select id="${id}" name="${id}" ${bind?`data-bind="${bind}"`:''} ${req?'required':''} ${hint?`aria-describedby="${id}-h"`:''} ${attrs}>
+  <option value="">${t('choose')}</option>${options.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===cur?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>`;
+}
+function choices({name,legend,bind,options,rerender=false,value}){
+  const cur=value!==undefined?value:getPath(S.p,bind);
+  return `<fieldset><legend>${legend}</legend><div class="choices">${options.map(([v,l])=>`<label class="choice"><input type="radio" id="${name}-${v}" name="${name}" value="${v}" ${bind?`data-bind="${bind}"`:''} ${rerender?'data-rerender="1"':''} ${String(cur)===String(v)?'checked':''} required> ${l}</label>`).join('')}</div></fieldset>`;
+}
+function matchBadge(score){
+  if(score>=70)return `<span class="badge match">${icon('check')}${t('suitable')}<span class="score">· <span class="sr-only">${t('fitScore')} </span>${score}</span></span>`;
+  if(score>=45)return `<span class="badge near">${icon('approx')}${t('nearMatch')}<span class="score">· <span class="sr-only">${t('fitScore')} </span>${score}</span></span>`;
+  return '';
+}
+const statusBadge=j=>j.status==='open'?`<span class="badge match">${icon('check')}${t('stOpen')}</span>`:`<span class="badge muted">${icon('lock')}${t('stClosed')}</span>`;
+const expText=y=>y>0?t('expN',{n:y}):t('noExp');
+const pageHead=(title,lead,eyebrow)=>`<div class="page-head">${eyebrow?`<span class="eyebrow">${eyebrow}</span>`:''}<h1 tabindex="-1">${title}</h1>${lead?`<p>${lead}</p>`:''}</div>`;
+const backBtn=to=>`<button class="btn btn-ghost" data-go="${to}">${icon('chev','flip-back')}<span>${t('backTo')}</span></button>`;
+const loc=j=>`${esc(L(j.city))}${S.lang==='ar'?'، ':', '}${esc(L(COUNTRIES[j.country]))}`;
+const note=(kind,ic,html)=>`<div class="note ${kind}">${icon(ic)}<p>${html}</p></div>`;
+const roleName=r=>({seeker:t('roleSeeker'),employer:t('roleEmployer'),admin:t('roleAdmin')}[r]||'—');
+
+/* ======================= Screens ======================= */
+const V={};
+
+V['S-01']=()=>`
+<section class="hero">
+  <span class="eyebrow">${t('tagline')}</span>
+  <h1 tabindex="-1">${t('heroTitle')}</h1>
+  <p class="lead">${t('heroLead')}</p>
+  <div class="actions"><button class="btn btn-primary" data-go="S-03" data-role="seeker">${t('ctaSeeker')}</button><button class="btn btn-secondary" data-go="S-10" data-role="employer">${t('ctaEmployer')}</button></div>
+  <p class="small muted" style="margin-top:12px">${t('haveAccount')} <button class="btn btn-ghost btn-sm" data-go="S-02">${t('login')}</button></p>
+</section>
+<h2 style="margin-top:24px">${t('howTitle')}</h2>
+<ol class="how">${[1,2,3].map(i=>`<li class="card"><h3>${t('how'+i+'t')}</h3><p class="muted small" style="margin:0">${t('how'+i)}</p></li>`).join('')}</ol>
+<div class="card" style="display:flex;gap:12px;align-items:flex-start">${icon('shield')}<div><h2 style="font-size:18px">${t('privacyTitle')}</h2><p class="muted" style="margin:0">${t('privacyBody')}</p></div></div>
+<div class="card"><h2 style="font-size:16px">${t('sections')}</h2><div class="badges"><span class="badge match">${icon('check')}${t('secJobs')} · ${t('available')}</span><span class="badge muted">${icon('clock')}${t('secSoon')}</span></div></div>`;
+
+V['S-02']=()=>`<div class="narrow">${pageHead(t('loginTitle'))}
+<form class="card" data-submit="login">
+  ${field({id:'l-email',label:t('email'),type:'email',cls:'ltr',value:S.role==='admin'?'turki@sanad.example':S.role==='employer'?'sarah@madar.example':'khaled.salem@example.com',attrs:'autocomplete="email"'})}
+  ${field({id:'l-pw',label:t('password'),type:'password',value:'Passw0rd!',attrs:'autocomplete="current-password"'})}
+  <button class="btn btn-primary btn-block" type="submit">${t('login')}</button>
+  <div class="actions between" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm">${t('forgot')}</button>
+  ${S.role!=='admin'?`<span class="small muted">${t('noAccount')} <button type="button" class="btn btn-ghost btn-sm" data-go="${S.role==='employer'?'S-10':'S-03'}">${t('signup')}</button></span>`:''}</div>
+</form></div>`;
+
+V['S-03']=()=>`<div class="narrow">${pageHead(t('seekerSignupTitle'),t('seekerSignupLead'))}
+<form class="card" data-submit="seekerSignup">
+  ${field({id:'su-email',label:t('personalEmail'),type:'email',cls:'ltr',value:S.newEmail,attrs:'autocomplete="email"'})}
+  ${field({id:'su-pw',label:t('password'),type:'password',hint:t('pwHint'),value:'',attrs:'autocomplete="new-password" minlength="8"'})}
+  ${field({id:'su-pw2',label:t('pw2'),type:'password',value:'',attrs:'autocomplete="new-password" minlength="8"'})}
+  <label class="check"><input type="checkbox" required id="su-consent"> <span>${t('consentShare')}</span></label>
+  <label class="check"><input type="checkbox" required id="su-terms"> <span>${t('consentTerms')}</span></label>
+  <button class="btn btn-primary btn-block" type="submit" style="margin-top:8px">${t('createAccount')}</button>
+</form></div>`;
+
+let resendTimer=null,resendLeft=0;
+V['S-04']=()=>`<div class="narrow">${pageHead(t('verifyTitle'),`${t('verifyLead')} <strong class="ltr" dir="ltr">${esc(S.verifyFor==='employer'?'sarah@madar.example':S.newEmail)}</strong>`)}
+<form class="card" data-submit="verify">
+  ${field({id:'otp',label:t('code'),hint:t('codeHint'),value:'',cls:'otp ltr',attrs:'inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"'})}
+  <button class="btn btn-primary btn-block" type="submit">${t('verify')}</button>
+  <div class="actions between" style="margin-top:8px">
+    <button type="button" class="btn btn-ghost btn-sm" id="resend" data-act="resend" ${resendLeft>0?'disabled':''}>${resendLeft>0?`${t('resendIn')} 0:${String(resendLeft).padStart(2,'0')}`:t('resend')}</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-go="${S.verifyFor==='employer'?'S-10':'S-03'}">${t('changeEmail')}</button>
+  </div>
+</form></div>`;
+
+/* Profile wizard */
+const STEP_KEYS=['st1','st2','st3','st4','st5','st6'];
+function wizardShell(inner){
+  const n=S.step;
+  return `${pageHead(t('wizTitle'))}
+  <div class="stepper-mobile"><strong>${t('stepOf',{n})}: ${t(STEP_KEYS[n-1])}</strong><p class="save-state" id="save-state" role="status">${icon('check')}<span>${t('saved')}</span></p></div>
+  <div class="progress" role="progressbar" aria-label="${t('stepOf',{n})}" aria-valuemin="1" aria-valuemax="6" aria-valuenow="${n}"><span style="width:${n/6*100}%"></span></div>
+  <ol class="steps">${STEP_KEYS.map((k,i)=>`<li class="${i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}>${i+1<n?icon('check'):''}${t(k)}</li>`).join('')}</ol>
+  <form data-submit="wizNext" class="narrow" style="margin-inline:0;max-width:720px">${inner}
+  <div class="actions between">
+    <div class="actions" style="margin:0">${n>1?`<button type="button" class="btn btn-secondary" data-act="wizBack">${icon('chev','flip-back')}${t('back')}</button>`:''}
+    <button type="button" class="btn btn-ghost" data-act="wizLater">${t('later')}</button></div>
+    <button type="submit" class="btn btn-primary">${n<6?t('next'):t('finish')}${icon('chev','flip')}</button>
+  </div></form>`;
+}
+const STEPS={
+  1:()=>`<fieldset class="group"><legend>${t('fullName')}</legend><div class="grid-2">
+      ${field({id:'w-first',label:t('first'),bind:'first',attrs:'autocomplete="given-name"'})}${field({id:'w-father',label:t('father'),bind:'father'})}
+      ${field({id:'w-grand',label:t('grand'),bind:'grand'})}${field({id:'w-family',label:t('family'),bind:'family',attrs:'autocomplete="family-name"'})}</div></fieldset>
+    ${choices({name:'idType',legend:t('idType'),bind:'idType',rerender:true,options:[['national',t('nationalId')],['passport',t('passport')]]})}
+    ${field({id:'w-id',label:S.p.idType==='passport'?t('passNo'):t('idNo'),bind:'idNo',hint:t('idHint'),cls:'ltr',attrs:S.p.idType==='passport'?'':'inputmode="numeric" pattern="[0-9]{10}" maxlength="10"'})}
+    ${choices({name:'gender',legend:t('gender'),bind:'gender',options:[['m',t('male')],['f',t('female')]]})}
+    <div class="grid-2"><div>${field({id:'w-birth',label:t('birth'),bind:'birth',type:'date',attrs:'max="2010-12-31" aria-describedby="age-out"'})}
+      <p class="age-out" id="age-out" aria-live="polite">${t('age')}: <strong id="age-val">${ageFrom(S.p.birth)??'—'}</strong> ${t('yearsUnit')} · ${t('ageAuto')}</p></div>
+    ${selectField({id:'w-nat',label:t('nationality'),bind:'nat',options:countryOpts()})}</div>
+    ${choices({name:'needs',legend:t('needs'),bind:'needs',options:[['yes',t('yes')],['no',t('no')]]})}`,
+  2:()=>`<div class="card">${selectField({id:'w-dar',label:t('dar'),bind:'dar',options:lkOpts('dar'),hint:t('affHint')})}${selectField({id:'w-fakhdh',label:t('fakhdh'),bind:'fakhdh',options:lkOpts('fakhdh')})}</div>`,
+  3:()=>`<div class="card">${note('privacy','lock',t('contactHint'))}
+    ${field({id:'w-phone',label:t('mobile'),bind:'phone',type:'tel',cls:'ltr',attrs:'inputmode="tel" autocomplete="tel" placeholder="05xxxxxxxx"'})}
+    ${field({id:'w-email',label:t('email'),bind:'email',type:'email',cls:'ltr',attrs:'autocomplete="email"'})}</div>`,
+  4:()=>`<div class="card">${selectField({id:'w-edu',label:t('eduLevel'),bind:'edu',options:lkOpts('edu')})}
+    <div class="grid-2">${field({id:'w-grad',label:t('gradYear'),bind:'grad',type:'number',cls:'ltr',attrs:'inputmode="numeric" min="1960" max="2030"'})}
+    ${selectField({id:'w-gradc',label:t('gradCountry'),bind:'gradC',options:countryOpts()})}</div>
+    ${field({id:'w-inst',label:t('inst'),bind:'inst'})}</div>`,
+  5:()=>`${choices({name:'hasExp',legend:t('hasExp'),bind:'hasExp',rerender:true,options:[['yes',t('yes')],['no',t('no')]]})}
+    ${S.p.hasExp==='yes'?`
+    <div style="max-width:240px">${field({id:'w-years',label:t('expYears'),bind:'years',type:'number',cls:'ltr',attrs:'inputmode="numeric" min="0" max="50"'})}</div>
+    ${[1,2].map(n=>`<fieldset class="group"><legend>${t('pos'+n)}${n===2?` <span class="opt">(${t('optional')})</span>`:''}</legend>
+      ${field({id:`w-p${n}t`,label:t('posTitle'),bind:`p${n}.t`,req:n===1})}
+      <div class="grid-2">${field({id:`w-p${n}f`,label:t('from'),bind:`p${n}.f`,type:'month',req:n===1,cls:'ltr'})}
+      ${field({id:`w-p${n}to`,label:t('to'),bind:`p${n}.to`,type:'month',req:false,cls:'ltr',attrs:S.p['p'+n].cur?'disabled':''})}</div>
+      <label class="check"><input type="checkbox" data-bind="p${n}.cur" data-rerender="1" ${S.p['p'+n].cur?'checked':''}> ${t('current')}</label></fieldset>`).join('')}
+    ${field({id:'w-ver',label:t('verifier'),bind:'ver',hint:t('verifierHint')})}`:''}`,
+  6:()=>{const c=S.p.cv;const sec=S.p.cvSector;return `<p class="muted">${t('cvLead')}</p>
+    ${c?`<div class="card file-row">${icon('file')}<span class="name">${esc(c.name)} <span class="small muted">· ${c.size}</span></span><span class="badge match">${icon('check')}${t('uploaded')}</span>
+      <button type="button" class="btn btn-secondary btn-sm" data-act="cvReplace">${t('replace')}</button><button type="button" class="btn btn-ghost btn-sm" data-act="cvRemove">${t('remove')}</button>${cvInput(true)}</div>`
+      :`<label class="drop" for="cv-in">${icon('upload')}<strong>${t('dropText')}</strong><span class="small muted" id="cv-hint">${t('dropHint')}</span>${cvInput(false)}</label>`}
+    <section class="card analysis" aria-labelledby="an-h">
+      <div class="job-top"><h2 id="an-h" class="section-title">${icon('spark')}${t('analysisTitle')}</h2><span class="badge info">${icon('info')}${t('whenActive')}</span></div>
+      ${note('info','info',t('analysisNote'))}
+      ${selectField({id:'w-sec',label:t('suggestedSector'),bind:'cvSector',options:lkOpts('sector'),hint:t('sectorFix'),req:false})}
+      <h3>${t('skills')}</h3><ul class="chips">${['SQL','Power BI','Excel','Python',L(['تحليل البيانات','Data analysis']),L(['إعداد التقارير','Reporting'])].map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
+      <dl class="kv" style="margin:16px 0"><dt>${t('inferredYears')}</dt><dd>3</dd></dl>
+      <h3>${t('tips')}</h3><ol class="tips">
+        <li>${L(['أضف مشروعاً أو مثالاً لتحليل نفّذته بأرقام واضحة لأثره.','Add a project or analysis you delivered, with measurable impact.'])}</li>
+        <li>${L(['شهادة في Power BI أو Tableau ترفع ملاءمتك لفرص التحليل.','A Power BI or Tableau certificate raises your fit for analytics roles.'])}</li>
+        <li>${L(['طوّر مهارة Python لتحليل البيانات (pandas).','Build Python skills for data analysis (pandas).'])}</li>
+        <li>${L(['اختصر السيرة إلى صفحتين وابدأ بأحدث خبرة.','Keep the CV to two pages and start with your latest role.'])}</li></ol>
+    </section>`;},
+};
+function cvInput(hidden){return `<input type="file" id="cv-in" class="sr-only" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" data-act-change="cvPick" ${hidden?'tabindex="-1" aria-hidden="true"':'aria-describedby="cv-hint"'}>`;}
+V['S-05']=()=>wizardShell(STEPS[S.step]());
+V['S-06']=V['S-05'];
+
+V['S-07']=()=>`${pageHead(t('jobsTitle'),t('jobsLead'))}
+${note('privacy','shield',t('anonNote'))}
+<div class="filters" role="search">
+  <div class="field"><label for="jq">${t('search')}</label><input type="search" id="jq" placeholder="${t('searchJobs')}" value="${esc(S.jobQ)}" data-filter="jobQ"></div>
+  <div class="field"><label for="js">${t('sector')}</label><select id="js" data-filter="jobSector"><option value="">${t('allSectors')}</option>${lkOpts('sector').map(o=>`<option value="${o[0]}" ${S.jobSector===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select></div>
+  <div class="field" style="justify-content:flex-end"><label class="check choice" style="flex:none"><input type="checkbox" id="jf" data-filter="fitOnly" ${S.fitOnly?'checked':''}> ${t('fitOnly')}</label></div>
+</div>
+<div class="legend-line"><span class="badge match">${icon('check')}${t('legendS')}</span><span class="badge near">${icon('approx')}${t('legendN')}</span></div>
+<div id="job-results">${jobResults()}</div>`;
+function jobResults(){
+  const q=S.jobQ.trim().toLowerCase();
+  const list=JOBS.map(publicJob).filter(j=>j.status==='open').filter(j=>!q||j.title.join(' ').toLowerCase().includes(q)).filter(j=>S.jobSector===''||String(j.sector)===S.jobSector).filter(j=>!S.fitOnly||j.score>=45).sort((a,b)=>b.score-a.score);
+  const sent=new Set(S.myReqs.map(r=>r.job));
+  return `<p class="small muted" role="status">${t('resultsN',{n:list.length})}</p>`+(list.length?`<div class="job-list">${list.map(j=>`
+  <article class="card job" aria-labelledby="jt-${j.id}">
+    <div class="job-top"><h2 id="jt-${j.id}">${esc(L(j.title))}</h2>${matchBadge(j.score)}</div>
+    <ul class="meta"><li>${icon('brief')}${esc(lk('sector',j.sector))}</li><li>${icon('pin')}${loc(j)}</li><li>${icon('cap')}${esc(lk('edu',j.edu))}</li><li>${icon('clock')}${expText(j.years)}</li></ul>
+    <div class="job-foot"><span class="small muted">${t('posted')} ${fmtDate(j.posted)}</span>
+      <div class="badges">${sent.has(j.id)?`<span class="badge primary">${icon('check')}${t('sent')}</span>`:''}<button class="btn btn-secondary btn-sm" data-go="S-08" data-job="${j.id}" aria-describedby="jt-${j.id}">${t('details')}${icon('chev','flip')}</button></div></div>
+  </article>`).join('')}</div>`:`<div class="empty card">${icon('brief')}<p>${t('noJobs')}</p></div>`);
+}
+
+V['S-08']=()=>{const j=publicJob(JOBS.find(x=>x.id===S.jobId)||JOBS[0]);const sent=S.myReqs.some(r=>r.job===j.id);
+  const why=[[j.why[0],'whySector','whySectorNo'],[j.why[1],'whyEdu','whyEduNo'],[j.why[2],'whyExp','whyExpNo']];
+  return `${backBtn('S-07')}
+  <div class="page-head" style="margin-top:8px"><div class="badges" style="margin-bottom:6px">${matchBadge(j.score)}${statusBadge(j)}</div><h1 tabindex="-1">${esc(L(j.title))}</h1>
+  <ul class="meta"><li>${icon('brief')}${esc(lk('sector',j.sector))}</li><li>${icon('pin')}${loc(j)}</li><li>${icon('cal')}${t('posted')} ${fmtDate(j.posted)}</li></ul></div>
+  <div class="two-col"><div>
+    <section class="card"><h2 class="section-title">${t('about')}</h2><p>${esc(L(j.desc))}</p>
+      <dl class="kv"><dt>${t('eduLevel')}</dt><dd>${esc(lk('edu',j.edu))}</dd><dt>${t('minExp')}</dt><dd>${expText(j.years)}</dd></dl></section>
+    <section class="card"><h2 class="section-title">${t('reqs')}</h2><ul>${j.reqs.map(r=>`<li>${esc(L(r))}</li>`).join('')}</ul></section>
+    <section class="card"><h2 class="section-title">${t('whyTitle')}</h2><ul class="why">${why.map(([ok,a,b])=>`<li>${ok?`<span class="ok">${icon('check')}</span>`:`<span class="no">${icon('approx')}</span>`}<span>${t(ok?a:b)}</span></li>`).join('')}</ul></section>
+  </div><aside class="sticky"><div class="card">${note('privacy','shield',t('anonNote'))}
+    ${sent?`<p class="badge match" style="margin-bottom:8px">${icon('check')}${t('sent')}</p><p class="small muted" style="margin:0">${t('sentState')}</p>`
+    :`<button class="btn btn-primary btn-block" data-act="interest" data-job="${j.id}">${t('interestBtn')}</button><p class="small muted" style="margin:8px 0 0">${t('interestHelp')}</p>`}
+  </div></aside></div>`;};
+
+V['S-09']=()=>`${pageHead(t('myReqTitle'),t('myReqLead'))}${S.myReqs.length?`<div class="stack">${S.myReqs.map(r=>{const j=publicJob(JOBS.find(x=>x.id===r.job));const open=j.status==='open';return `
+  <article class="card job"><div class="job-top"><h2>${esc(L(j.title))}</h2>${open?`<span class="badge primary">${icon('check')}${t('reqSent')}</span>`:`<span class="badge muted">${icon('lock')}${t('reqClosed')}</span>`}</div>
+  <ul class="meta"><li>${icon('brief')}${esc(lk('sector',j.sector))}</li><li>${icon('cal')}${t('requestedOn')}: ${fmtDate(r.d)}</li></ul>
+  ${open?`<div class="job-foot"><span></span><button class="btn btn-secondary btn-sm" data-go="S-08" data-job="${j.id}">${t('details')}${icon('chev','flip')}</button></div>`:''}</article>`;}).join('')}</div>`
+  :`<div class="card empty">${icon('brief')}<p>${t('noReqs')}</p><button class="btn btn-primary" data-go="S-07">${t('browseJobs')}</button></div>`}`;
+
+/* Employer */
+V['S-10']=()=>`<div class="narrow">${pageHead(t('empSignupTitle'))}
+<form class="card" data-submit="empSignup">
+  ${note('privacy','shield',t('empSignupNote'))}
+  ${field({id:'e-name',label:t('empName'),value:L(EMP.e1.name),attrs:'autocomplete="name"'})}
+  ${field({id:'e-org',label:t('org'),value:L(EMP.e1.org),attrs:'autocomplete="organization"'})}
+  ${selectField({id:'e-sec',label:t('sector'),options:lkOpts('sector'),value:'0'})}
+  ${field({id:'e-email',label:t('email'),type:'email',cls:'ltr',value:'sarah@madar.example',attrs:'autocomplete="email"'})}
+  ${field({id:'e-phone',label:t('phone'),type:'tel',cls:'ltr',value:'0112345678',attrs:'inputmode="tel" autocomplete="tel"'})}
+  ${field({id:'e-pw',label:t('password'),type:'password',hint:t('pwHint'),value:'',attrs:'autocomplete="new-password" minlength="8"'})}
+  <label class="check"><input type="checkbox" required> <span>${t('consentTerms')}</span></label>
+  <button class="btn btn-primary btn-block" type="submit">${t('createAccount')}</button>
+</form></div>`;
+
+V['S-11']=()=>`<div class="narrow">${pageHead(t('pendingTitle'),t('pendingLead'))}
+<div class="card"><ol class="timeline">
+  <li class="done"><span class="dot">${icon('check')}</span><span>${t('tlCreated')}</span></li>
+  <li class="done"><span class="dot">${icon('check')}</span><span>${t('tlVerified')}</span></li>
+  <li class="wait"><span class="dot">${icon('clock')}</span><span>${t('tlReview')} · <span class="badge near">${icon('clock')}${t('inProgress')}</span></span></li></ol>
+  <button class="btn btn-primary btn-block" aria-disabled="true" aria-describedby="pd-why" data-act="noop">${icon('lock')}${t('newJob')}</button>
+  <p class="hint" id="pd-why" style="margin-top:8px">${t('postDisabled')}</p></div>
+<p style="margin-top:16px"><button class="btn btn-ghost btn-sm" data-act="simApprove">${t('simulateApprove')}</button></p></div>`;
+
+const myJobs=()=>JOBS.filter(j=>j.owner==='e1');
+V['S-12']=()=>{const js=myJobs();const reqs=js.reduce((s,j)=>s+(APPS[j.id]||[]).length,0);
+  return `${pageHead(t('empDashTitle'),esc(L(EMP.e1.org)))}
+  <div class="stats"><div class="stat"><div class="n">${js.filter(j=>j.status==='open').length}</div><div class="l">${t('openJobs')}</div></div>
+  <div class="stat"><div class="n">${reqs}</div><div class="l">${t('interestReqs')}</div></div>
+  <div class="stat"><div class="n">${js.filter(j=>j.outcome==='hired').length}</div><div class="l">${t('hiredVia')}</div></div></div>
+  <div class="job-top" style="margin-bottom:12px"><h2>${t('myJobs')}</h2><button class="btn btn-primary" data-go="S-13">${icon('plus')}${t('newJob')}</button></div>
+  <div class="table-wrap"><table class="rtable"><thead><tr><th>${t('jobTitle')}</th><th>${t('status')}</th><th>${t('posted')}</th><th>${t('applicants')}</th><th>${t('actions')}</th></tr></thead><tbody>
+  ${js.map(j=>`<tr><td data-label="${t('jobTitle')}"><strong>${esc(L(j.title))}</strong></td>
+    <td data-label="${t('status')}"><div class="badges">${statusBadge(j)}${j.outcome==='hired'?`<span class="badge match">${icon('check')}${t('outHired')}</span>`:j.outcome==='none'?`<span class="badge muted">${t('outNone')}</span>`:''}</div></td>
+    <td data-label="${t('posted')}">${fmtDate(j.posted)}</td><td data-label="${t('applicants')}">${(APPS[j.id]||[]).length}</td>
+    <td data-label="${t('actions')}"><div class="row-actions"><button class="btn btn-secondary btn-sm" data-go="S-14" data-job="${j.id}">${t('applicants')}</button>${j.status==='open'?`<button class="btn btn-ghost btn-sm" data-go="S-16" data-job="${j.id}">${t('close')}</button>`:''}</div></td></tr>`).join('')}
+  </tbody></table></div>`;};
+
+V['S-13']=()=>`<div class="narrow">${backBtn('S-12')}${pageHead(t('postTitle'))}
+<form class="card" data-submit="postJob">${note('privacy','shield',t('postNote'))}
+  ${field({id:'pj-title',label:t('jobTitle'),value:''})}
+  ${selectField({id:'pj-sec',label:t('sector'),options:lkOpts('sector'),value:''})}
+  <div class="grid-2">${field({id:'pj-city',label:t('city'),value:''})}${selectField({id:'pj-country',label:t('country'),options:countryOpts(),value:'SA'})}</div>
+  <div class="grid-2">${selectField({id:'pj-edu',label:t('reqEdu'),options:lkOpts('edu'),value:''})}${field({id:'pj-years',label:t('reqYears'),type:'number',value:'0',cls:'ltr',attrs:'inputmode="numeric" min="0" max="30"'})}</div>
+  <div class="field"><label for="pj-desc">${t('desc')}</label><p class="hint" id="pj-desc-h">${t('descHint')}</p><textarea id="pj-desc" required aria-describedby="pj-desc-h"></textarea></div>
+  <button class="btn btn-primary btn-block" type="submit">${t('publish')}</button></form></div>`;
+
+const curJob=()=>JOBS.find(j=>j.id===S.jobId&&j.owner==='e1')||JOBS[0];
+V['S-14']=()=>{const j=curJob();const apps=(APPS[j.id]||[]).slice().sort((a,b)=>b.score-a.score);
+  return `${backBtn('S-12')}${pageHead(t('applicantsTitle'),esc(L(j.title)))}${note('privacy','info',t('applicantsNote'))}
+  ${apps.length?`<div class="job-list">${apps.map(a=>{const p=PEOPLE[a.s];return `<article class="card job" aria-labelledby="ap-${a.s}">
+    <div class="job-top"><h2 id="ap-${a.s}">${esc(L(p.name))}</h2>${matchBadge(a.score)}</div>
+    <ul class="meta"><li>${icon('user')}${p.age} ${t('yearsUnit')} · ${p.gender==='m'?t('male'):t('female')}</li><li>${icon('cap')}${esc(lk('edu',p.edu))}</li><li>${icon('clock')}${t('expN',{n:p.years})}</li></ul>
+    <div class="job-foot"><span class="small muted">${t('requestedOn')}: ${fmtDate(a.d)}</span><button class="btn btn-secondary btn-sm" data-go="S-15" data-seeker="${a.s}" aria-describedby="ap-${a.s}">${t('viewProfile')}${icon('chev','flip')}</button></div></article>`;}).join('')}</div>`
+  :`<div class="card empty">${icon('user')}<p>${t('noApplicants')}</p></div>`}`;};
+
+V['S-15']=()=>{const p=PEOPLE[S.seekerId];const a=(APPS[curJob().id]||[]).find(x=>x.s===S.seekerId);
+  return `${backBtn('S-14')}<div class="page-head" style="margin-top:8px"><div class="badges" style="margin-bottom:6px">${a?matchBadge(a.score):''}</div><h1 tabindex="-1">${esc(L(p.name))}</h1><p class="muted">${t('applicantsTitle')}: ${esc(L(curJob().title))}</p></div>
+  <div class="two-col"><div>
+    <section class="card"><h2 class="section-title">${icon('user')}${t('personal')}</h2><dl class="kv">
+      <dt>${t('age')}</dt><dd>${p.age} ${t('yearsUnit')}</dd><dt>${t('gender')}</dt><dd>${p.gender==='m'?t('male'):t('female')}</dd>
+      <dt>${t('nationality')}</dt><dd>${esc(L(COUNTRIES[p.nat]))}</dd><dt>${t('needs')}</dt><dd>${p.needs?t('yes'):t('no')}</dd></dl></section>
+    <section class="card"><h2 class="section-title">${icon('cap')}${t('education')}</h2><dl class="kv">
+      <dt>${t('eduLevel')}</dt><dd>${esc(lk('edu',p.edu))}</dd><dt>${t('inst')}</dt><dd>${esc(L(p.inst))}</dd><dt>${t('gradYear')}</dt><dd>${p.grad}</dd><dt>${t('gradCountry')}</dt><dd>${esc(L(COUNTRIES[p.gradC]))}</dd></dl></section>
+    <section class="card"><h2 class="section-title">${icon('brief')}${t('experience')}</h2><dl class="kv"><dt>${t('expYears')}</dt><dd>${p.years}</dd>
+      ${p.pos.map((x,i)=>`<dt>${t('pos'+(i+1))}</dt><dd>${esc(L(x.t))}<br><span class="small muted">${fmtDate(x.f)} – ${x.to?fmtDate(x.to):t('currentNow')}</span></dd>`).join('')}
+      <dt>${t('verifier')}</dt><dd>${esc(L(p.ver))}</dd></dl></section>
+  </div><aside class="sticky">
+    <section class="card"><h2 class="section-title">${icon('phone')}${t('contact')}</h2>
+      <p style="margin-bottom:4px"><span dir="ltr">${p.phone}</span></p><p><span dir="ltr" style="overflow-wrap:anywhere">${p.email}</span></p>
+      <div class="actions" style="margin-top:8px"><a class="btn btn-primary" href="tel:${p.phone}">${icon('phone')}${t('call')}</a><a class="btn btn-secondary" href="mailto:${p.email}">${icon('mail')}${t('sendEmail')}</a></div></section>
+    <section class="card"><h2 class="section-title">${icon('file')}${t('cv')}</h2><p class="small" style="overflow-wrap:anywhere">${p.cv}</p>
+      <a class="btn btn-secondary btn-block" href="#" data-act="openCv" aria-describedby="cv-h">${t('openCv')}</a><p class="hint" id="cv-h" style="margin-top:6px">${t('cvLinkHint')}</p></section>
+  </aside></div>`;};
+
+V['S-16']=()=>{const j=curJob();const apps=APPS[j.id]||[];const hired=S.closeOutcome!=='none';
+  return `<div class="narrow">${backBtn('S-12')}${pageHead(t('closeTitle'),esc(L(j.title)))}
+  <form class="card" data-submit="closeJob">
+    ${choices({name:'outcome',legend:t('outcome'),rerender:true,value:hired?'hired':'none',options:[['hired',t('outHired')],['none',t('outNone')]]})}
+    ${hired?selectField({id:'cj-who',label:t('pickHired'),options:apps.map(a=>[a.s,L(PEOPLE[a.s].name)]),value:S.closeWho||''}):''}
+    ${note('warn','warn',t('closeWarn'))}
+    <div class="actions"><button class="btn btn-primary" type="submit">${t('confirmClose')}</button><button type="button" class="btn btn-secondary" data-go="S-12">${t('cancel')}</button></div>
+  </form></div>`;};
+
+/* Admin */
+const auditActionLabel=a=>t({create:'aCreate',update:'aUpdate',delete:'aDelete',login:'aLogin',loginFail:'aLoginFail',approve:'aApprove'}[a]);
+V['S-17']=()=>`${pageHead(t('adminTitle'))}
+<div class="stats">
+  <div class="stat"><div class="n">${num(1248)}</div><div class="l">${t('seekers')}</div></div>
+  <div class="stat"><div class="n">64</div><div class="l">${t('employersApproved')}</div></div>
+  <div class="stat"><div class="n">${PENDING.length}</div><div class="l">${t('pendingN')}</div></div>
+  <div class="stat"><div class="n">41</div><div class="l">${t('openJobs')}</div></div>
+  <div class="stat"><div class="n">932</div><div class="l">${t('interestReqs')}</div></div>
+  <div class="stat"><div class="n">38</div><div class="l">${t('hiredVia')}</div></div></div>
+<div class="charts">
+  <section class="card"><div class="job-top"><h2>${t('pendingCard')}</h2><span class="badge near">${icon('clock')}${PENDING.length}</span></div>
+    <ul class="why">${PENDING.slice(0,3).map(p=>`<li>${icon('brief')}<span><strong>${esc(L(p.org))}</strong><br><span class="small muted">${esc(lk('sector',p.sector))} · ${fmtDate(p.d)}</span></span></li>`).join('')||`<li>${t('noPending')}</li>`}</ul>
+    <button class="btn btn-primary" data-go="S-18">${t('reviewNow')}</button></section>
+  <section class="card"><div class="job-top"><h2>${t('recentAudit')}</h2></div>
+    <ul class="why">${AUDIT.slice(0,4).map(a=>`<li>${icon('clock')}<span><strong>${auditActionLabel(a.a)}</strong> · ${esc(a.e)}<br><span class="small muted">${esc(L(a.u))} · <span dir="ltr">${a.tm}</span></span></span></li>`).join('')}</ul>
+    <button class="btn btn-secondary" data-go="S-21">${t('viewAll')}</button></section></div>`;
+
+V['S-18']=()=>`${pageHead(t('approvalsTitle'))}${note('privacy','lock',t('approvalsNote'))}
+${PENDING.length?`<div class="job-list">${PENDING.map(p=>`<article class="card job" aria-labelledby="pe-${p.id}">
+  <div class="job-top"><h2 id="pe-${p.id}">${esc(L(p.org))}</h2><span class="badge match">${icon('check')}${t('emailVerified')}</span></div>
+  <dl class="kv"><dt>${t('empName')}</dt><dd>${esc(L(p.name))}</dd><dt>${t('sector')}</dt><dd>${esc(lk('sector',p.sector))}</dd>
+  <dt>${t('email')}</dt><dd><span dir="ltr">${p.email}</span></dd><dt>${t('phone')}</dt><dd><span dir="ltr">${p.phone}</span></dd><dt>${t('registered')}</dt><dd>${fmtDate(p.d)}</dd></dl>
+  <div class="job-foot"><span></span><div class="row-actions"><button class="btn btn-primary btn-sm" data-act="approve" data-id="${p.id}" aria-describedby="pe-${p.id}">${icon('check')}${t('approve')}</button><button class="btn btn-secondary btn-sm" data-act="reject" data-id="${p.id}" aria-describedby="pe-${p.id}">${t('reject')}</button></div></div></article>`).join('')}</div>`
+:`<div class="card empty">${icon('check')}<p>${t('noPending')}</p></div>`}`;
+
+const TABS=[['dar','tabDar'],['fakhdh','tabFakhdh'],['sector','tabSector'],['edu','tabEdu']];
+V['S-19']=()=>{const tab=S.lookupTab;return `${pageHead(t('lookupsTitle'),t('lookupsLead'))}
+<div role="tablist" aria-label="${t('lookupsTitle')}">${TABS.map(([k,l])=>`<button role="tab" id="tab-${k}" aria-controls="panel" aria-selected="${k===tab}" tabindex="${k===tab?0:-1}" data-act="tab" data-tab="${k}">${t(l)}</button>`).join('')}</div>
+<div id="panel" role="tabpanel" aria-labelledby="tab-${tab}">
+  <form class="card" data-submit="addLookup" style="margin-bottom:16px"><h2 style="font-size:16px">${t('addItem')}</h2>
+    <div class="grid-2">${field({id:'lk-ar',label:t('nameAr'),value:'',attrs:'dir="rtl" lang="ar"'})}${field({id:'lk-en',label:t('nameEn'),value:'',attrs:'dir="ltr" lang="en"'})}</div>
+    <button class="btn btn-primary" type="submit">${icon('plus')}${t('add')}</button></form>
+  <div class="table-wrap"><table class="rtable"><thead><tr><th>#</th><th>${t('nameAr')}</th><th>${t('nameEn')}</th><th>${t('status')}</th><th>${t('actions')}</th></tr></thead><tbody>
+  ${LK[tab].map((x,i)=>`<tr><td data-label="#">${i+1}</td><td data-label="${t('nameAr')}" lang="ar">${esc(x[0])}</td><td data-label="${t('nameEn')}" lang="en">${esc(x[1])}</td>
+  <td data-label="${t('status')}">${x[2]?`<span class="badge match">${icon('check')}${t('active')}</span>`:`<span class="badge muted">${icon('x')}${t('inactive')}</span>`}</td>
+  <td data-label="${t('actions')}"><div class="row-actions"><button class="btn btn-secondary btn-sm" data-act="editLookup" data-i="${i}" aria-label="${t('edit')}: ${esc(L([x[0],x[1]]))}">${t('edit')}</button>
+  <button class="btn btn-ghost btn-sm" data-act="toggleLookup" data-i="${i}" aria-label="${x[2]?t('disable'):t('enable')}: ${esc(L([x[0],x[1]]))}">${x[2]?t('disable'):t('enable')}</button></div></td></tr>`).join('')}
+  </tbody></table></div></div>`;};
+
+const uStatus=s=>s==='active'?`<span class="badge match">${icon('check')}${t('uActive')}</span>`:s==='pending'?`<span class="badge near">${icon('clock')}${t('uPending')}</span>`:`<span class="badge danger">${icon('x')}${t('uSuspended')}</span>`;
+V['S-20']=()=>`${pageHead(t('usersTitle'))}
+<div class="filters" role="search"><div class="field"><label for="uq">${t('search')}</label><input type="search" id="uq" placeholder="${t('searchUsers')}" value="${esc(S.userQ)}" data-filter="userQ"></div>
+<div class="field"><label for="ur">${t('role')}</label><select id="ur" data-filter="userRole"><option value="">${t('allRoles')}</option>${['seeker','employer','admin'].map(r=>`<option value="${r}" ${S.userRole===r?'selected':''}>${roleName(r)}</option>`).join('')}</select></div></div>
+<div id="user-results">${userResults()}</div>`;
+function userResults(){const q=S.userQ.trim().toLowerCase();const rows=USERS.filter(u=>(!S.userRole||u.r===S.userRole)&&(!q||(u.n.join(' ')+u.e).toLowerCase().includes(q)));
+  return `<p class="small muted" role="status">${num(rows.length)} / ${num(USERS.length)}</p>`+(rows.length?`<div class="table-wrap"><table class="rtable"><thead><tr><th>${t('name')}</th><th>${t('role')}</th><th>${t('email')}</th><th>${t('status')}</th><th>${t('registered')}</th><th>${t('actions')}</th></tr></thead><tbody>
+  ${rows.map(u=>`<tr><td data-label="${t('name')}"><strong>${esc(L(u.n))}</strong></td><td data-label="${t('role')}">${roleName(u.r)}</td><td data-label="${t('email')}"><span dir="ltr">${u.e}</span></td><td data-label="${t('status')}">${uStatus(u.s)}</td><td data-label="${t('registered')}">${fmtDate(u.d)}</td>
+  <td data-label="${t('actions')}"><button class="btn btn-secondary btn-sm" aria-label="${t('view')}: ${esc(L(u.n))}">${t('view')}</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty"><p>${t('noRows')}</p></div>`);}
+
+V['S-21']=()=>{const A=S.audit;const tables=[...new Set(AUDIT.map(a=>a.e))];return `${pageHead(t('auditTitle'))}${note('info','lock',t('auditNote'))}
+<div class="filters f5" role="search">
+  <div class="field"><label for="au">${t('user')}</label><input type="search" id="au" value="${esc(A.u)}" data-filter="audit.u"></div>
+  <div class="field"><label for="aa">${t('action')}</label><select id="aa" data-filter="audit.a"><option value="">${t('allActions')}</option>${['create','update','delete','approve','login','loginFail'].map(a=>`<option value="${a}" ${A.a===a?'selected':''}>${auditActionLabel(a)}</option>`).join('')}</select></div>
+  <div class="field"><label for="ae">${t('entity')}</label><select id="ae" data-filter="audit.e"><option value="">${t('allTables')}</option>${tables.map(e=>`<option ${A.e===e?'selected':''}>${e}</option>`).join('')}</select></div>
+  <div class="field"><label for="af">${t('fromDate')}</label><input type="date" id="af" value="${A.f}" data-filter="audit.f" class="ltr"></div>
+  <div class="field"><label for="at">${t('toDate')}</label><input type="date" id="at" value="${A.to}" data-filter="audit.to" class="ltr"></div></div>
+<div id="audit-results">${auditResults()}</div>`;};
+function auditResults(){const A=S.audit,q=A.u.trim().toLowerCase();
+  const rows=AUDIT.filter(r=>(!q||r.u.join(' ').toLowerCase().includes(q))&&(!A.a||r.a===A.a)&&(!A.e||r.e===A.e)&&(!A.f||r.tm.slice(0,10)>=A.f)&&(!A.to||r.tm.slice(0,10)<=A.to));
+  return `<p class="small muted" role="status">${num(rows.length)} / ${num(AUDIT.length)}</p>`+(rows.length?`<div class="table-wrap"><table class="rtable"><thead><tr><th>${t('time')}</th><th>${t('user')}</th><th>${t('role')}</th><th>${t('action')}</th><th>${t('entity')}</th><th>${t('recordId')}</th><th>${t('ip')}</th><th>${t('beforeAfter')}</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td data-label="${t('time')}"><span dir="ltr">${r.tm}</span></td><td data-label="${t('user')}">${esc(L(r.u))}</td><td data-label="${t('role')}">${roleName(r.r)}</td>
+  <td data-label="${t('action')}"><span class="badge ${r.a==='delete'||r.a==='loginFail'?'danger':r.a==='create'||r.a==='approve'?'match':'muted'}">${auditActionLabel(r.a)}</span></td>
+  <td data-label="${t('entity')}"><code>${r.e}</code></td><td data-label="${t('recordId')}"><code>${r.id}</code></td><td data-label="${t('ip')}"><span dir="ltr">${r.ip}</span></td>
+  <td data-label="${t('beforeAfter')}" class="full"><details class="diff"><summary>${t('view')}</summary><div class="small">${t('before')}</div><pre>${esc(r.b)}</pre><div class="small">${t('after')}</div><pre>${esc(r.af)}</pre></details></td></tr>`).join('')}</tbody></table></div>`:`<div class="card empty"><p>${t('noRows')}</p></div>`);}
+
+function bars(title,rows,color='var(--primary)'){
+  const vis=rows.filter(r=>r[1]>=5);const max=Math.max(...vis.map(r=>r[1]),1);const rtl=S.lang==='ar';
+  const desc=rows.map(r=>`${r[0]}: ${r[1]>=5?num(r[1]):t('hiddenLt5')}`).join('، ');
+  return `<figure class="chart card" role="group" aria-label="${esc(title)}"><figcaption>${title}</figcaption><p class="sr-only">${esc(desc)}</p>
+  ${rows.map(([l,v])=>{const hidden=v<5;const w=hidden?100:Math.max(2,v/max*100);const x=rtl?100-w:0;return `<div class="bar-row ${hidden?'hidden':''}" aria-hidden="true">
+    <div class="bar-label"><span>${esc(l)}</span><span class="v">${hidden?t('hiddenLt5'):num(v)}</span></div>
+    <svg viewBox="0 0 100 14" preserveAspectRatio="none" focusable="false"><rect x="0" y="0" width="100" height="14" rx="1.5" fill="var(--surface-2)"/>${hidden?`<rect x="0.5" y="0.5" width="99" height="13" fill="none" stroke="var(--border)" stroke-dasharray="2 1.5" vector-effect="non-scaling-stroke"/>`:`<rect x="${x}" y="0" width="${w}" height="14" rx="1.5" fill="${color}"/>`}</svg></div>`;}).join('')}</figure>`;}
+V['S-22']=()=>{const emp=S.role==='employer';const js=myJobs();
+  return `${pageHead(t('reportsTitle'),emp?t('empReportsNote'):t('reportsLead'))}${note('info','shield',t('under5'))}
+  ${emp?`<h2>${t('myJobsStats')}</h2><div class="stats"><div class="stat"><div class="n">${js.length}</div><div class="l">${t('totalJobs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.status==='open').length}</div><div class="l">${t('openJobs')}</div></div><div class="stat"><div class="n">${js.reduce((s,j)=>s+(APPS[j.id]||[]).length,0)}</div><div class="l">${t('interestReqs')}</div></div><div class="stat"><div class="n">${js.filter(j=>j.outcome==='hired').length}</div><div class="l">${t('hiredVia')}</div></div></div>`:''}
+  <h2>${t('seekerStats')}</h2><div class="stats"><div class="stat"><div class="n">${num(1248)}</div><div class="l">${t('totalSeekers')}</div></div><div class="stat"><div class="n">${num(733)}</div><div class="l">${t('withExp')}</div></div></div>
+  <div class="charts">
+    ${bars(t('byAge'),[['18–24',312],['25–34',541],['35–44',268],['45–54',98],['55+',29]])}
+    ${bars(t('byGender'),[[t('male'),702],[t('female'),546]])}
+    ${bars(t('byEdu'),LK.edu.map((e,i)=>[L([e[0],e[1]]),[214,287,598,146,3][i]]))}
+    ${bars(t('byExp'),[[t('withExp'),733],[t('withoutExp'),515]])}
+  </div>
+  <h2 style="margin-top:24px">${t('jobStats')}</h2><div class="stats"><div class="stat"><div class="n">96</div><div class="l">${t('totalJobs')}</div></div><div class="stat"><div class="n">41</div><div class="l">${t('openJobs')}</div></div><div class="stat"><div class="n">38</div><div class="l">${t('hiredVia')}</div></div><div class="stat"><div class="n">17</div><div class="l">${t('outNone')}</div></div></div>
+  <div class="charts">
+    ${bars(t('bySector'),LK.sector.map((s,i)=>[L([s[0],s[1]]),[31,14,9,12,11,8,9,2][i]]))}
+    ${bars(t('byStatus'),[[t('stOpen'),41],[t('outHired'),38],[t('outNone'),17]],'var(--accent)')}
+  </div>`;};
+
+/* ======================= Chrome: toolbar, header ======================= */
+const NAV={
+  seeker:[['S-07','navJobs'],['S-09','navReq'],['S-05','navProfile']],
+  employer:[['S-12','navDash'],['S-13','navPost'],['S-22','navReports']],
+  admin:[['S-17','navHome'],['S-18','navApprovals'],['S-19','navLookups'],['S-20','navUsers'],['S-21','navAudit'],['S-22','navReports']],
+};
+const PUBLIC=['S-01','S-02','S-03','S-04','S-10','S-11'];
+function renderChrome(){
+  document.documentElement.lang=S.lang;document.documentElement.dir=S.lang==='ar'?'rtl':'ltr';document.title=t('pageTitle');
+  $('#skip').textContent=t('skip');
+  $('#proto-tag').innerHTML=`${icon('info')}${t('protoTag')}`;
+  $('#role-seg').innerHTML=['seeker','employer','admin'].map(r=>`<button type="button" aria-pressed="${S.role===r}" data-role-switch="${r}">${roleName(r)}</button>`).join('');
+  $('#screen-sel-l').textContent=t('screen');
+  $('#screen-sel').innerHTML=ROLE_SCREENS[S.role].map(id=>`<option value="${id}" ${id===S.screen?'selected':''}>${id} · ${t(id)}</option>`).join('');
+  const pub=PUBLIC.includes(S.screen);const nav=pub?[]:NAV[S.role];
+  const active=S.screen==='S-06'?'S-05':S.screen==='S-08'?'S-07':['S-14','S-15','S-16'].includes(S.screen)?'S-12':S.screen;
+  $('#app-h').innerHTML=`<div class="container"><div class="row">
+    <button class="brand" data-go="${pub?'S-01':ROLE_HOME[S.role]==='S-01'?'S-07':ROLE_HOME[S.role]}">${LOGO}<span>${t('brand')}<small>${t('tagline')}</small></span></button>
+    <div class="h-actions"><button class="btn btn-secondary btn-sm" id="lang-btn" data-act="lang" lang="${S.lang==='ar'?'en':'ar'}" aria-label="${t('langAria')}">${t('langBtn')}</button>
+    ${pub?(S.screen==='S-11'?`<button class="btn btn-ghost btn-sm" data-go="S-01">${t('logout')}</button>`:S.screen!=='S-02'?`<button class="btn btn-ghost btn-sm" data-go="S-02">${t('login')}</button>`:''):`<button class="btn btn-ghost btn-sm" data-go="${S.role==='seeker'?'S-01':'S-02'}">${t('logout')}</button>`}</div></div>
+    ${nav.length?`<nav class="nav" aria-label="${t('mainNav')}">${nav.map(([id,k])=>`<button data-go="${id}" ${id===active?'aria-current="page"':''}>${t(k)}</button>`).join('')}</nav>`:''}</div>`;
+  $('#foot').textContent=t('footer');
+}
+function render(){renderChrome();$('#view').innerHTML=V[S.screen]();}
+function go(screen,opts={}){
+  if(screen==='S-06')S.step=6;else if(screen==='S-05'&&(S.screen!=='S-05'||opts.reset))S.step=S.step===6?1:S.step;
+  Object.assign(S,opts);S.screen=screen;render();window.scrollTo(0,0);
+  const h=$('#view h1');if(h)h.focus({preventScroll:true});
+  if(screen==='S-04'&&!resendLeft)startResend();
+}
+function rerenderKeep(){const id=document.activeElement&&document.activeElement.id;render();if(id){const el=document.getElementById(id);if(el)el.focus();}}
+function toast(msg){const el=$('#toast');el.innerHTML=`${icon('check')}<span>${msg}</span>`;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),4200);}
+function startResend(){resendLeft=45;clearInterval(resendTimer);resendTimer=setInterval(()=>{resendLeft--;const b=$('#resend');if(b){b.disabled=resendLeft>0;b.textContent=resendLeft>0?`${t('resendIn')} 0:${String(resendLeft).padStart(2,'0')}`:t('resend');}if(resendLeft<=0)clearInterval(resendTimer);},1000);}
+
+/* Dialog */
+function openDialog({title,body,confirm,danger,gate,onConfirm}){
+  const d=$('#dlg');const opener=document.activeElement;
+  d.innerHTML=`<form method="dialog"><div class="dlg-body"><h2 id="dlg-title">${title}</h2>${body}</div><div class="dlg-foot"><button value="cancel" formnovalidate class="btn btn-secondary">${t('cancel')}</button><button value="ok" id="dlg-ok" class="btn ${danger?'btn-danger':'btn-primary'}" ${gate?'disabled':''}>${confirm}</button></div></form>`;
+  if(gate){const g=d.querySelector(gate);g.addEventListener('change',()=>{d.querySelector('#dlg-ok').disabled=!g.checked;});}
+  d.onclose=()=>{if(d.returnValue==='ok'){onConfirm(d);}else if(opener&&document.contains(opener))opener.focus();};
+  d.returnValue='';d.showModal();
+}
+
+/* ======================= Actions ======================= */
+const SUBMIT={
+  login(){go(ROLE_HOME[S.role]==='S-01'?'S-07':ROLE_HOME[S.role]);},
+  seekerSignup(f){S.newEmail=f.querySelector('#su-email').value;go('S-04',{verifyFor:'seeker'});},
+  verify(){if(S.verifyFor==='employer'){go('S-11');}else{S.step=1;go('S-05');}},
+  wizNext(){if(S.step<6){S.step++;go(S.step===6?'S-06':'S-05');}else{toast(t('doneToast'));go('S-07');}},
+  empSignup(){S.empApproved=false;go('S-04',{verifyFor:'employer'});},
+  postJob(f){const g=id=>f.querySelector(id).value;const id=Math.max(...JOBS.map(j=>j.id))+1;
+    JOBS.push({id,owner:'e1',title:[g('#pj-title'),g('#pj-title')],sector:+g('#pj-sec'),city:[g('#pj-city'),g('#pj-city')],country:g('#pj-country'),edu:+g('#pj-edu'),years:+g('#pj-years')||0,posted:new Date().toISOString().slice(0,10),score:0,status:'open',why:[0,0,0],desc:[g('#pj-desc'),g('#pj-desc')],reqs:[]});
+    toast(t('publishedToast'));go('S-12');},
+  closeJob(f){const j=curJob();j.status='closed';j.outcome=S.closeOutcome==='none'?'none':'hired';if(j.outcome==='hired')j.hired=f.querySelector('#cj-who').value;toast(t('closedToast'));S.closeOutcome='hired';S.closeWho='';go('S-12');},
+  addLookup(f){const ar=f.querySelector('#lk-ar').value.trim(),en=f.querySelector('#lk-en').value.trim();LK[S.lookupTab].push([ar,en,1]);toast(t('addedToast'));render();$('#lk-ar').focus();},
+};
+const ACT={
+  lang(){S.lang=S.lang==='ar'?'en':'ar';render();$('#lang-btn').focus();},
+  wizBack(){S.step--;go('S-05');},
+  wizLater(){toast(t('laterToast'));go('S-07');},
+  resend(){toast(t('codeSent'));startResend();},
+  cvRemove(){S.p.cv=null;render();$('#cv-in').focus();},
+  cvReplace(){$('#cv-in').click();},
+  interest(el){const id=+el.dataset.job;openDialog({title:t('dlgInterestTitle'),confirm:t('sendRequest'),gate:'#agree',
+    body:`<p>${t('dlgInterestLead')}</p><ul><li>${t('shareProfile')}</li><li>${t('shareCv')}</li><li>${t('shareContact')}</li></ul>${note('privacy','shield',t('dlgInterestNote'))}<label class="check"><input type="checkbox" id="agree"> <span>${t('agreeShare')}</span></label>`,
+    onConfirm(){S.myReqs.unshift({job:id,d:new Date().toISOString().slice(0,10)});render();toast(t('interestToast'));const h=$('#view h1');h&&h.focus();}});},
+  simApprove(){S.empApproved=true;toast(t('approvedToast'));go('S-12');},
+  noop(){},
+  openCv(el,e){e.preventDefault();toast(t('cvLinkHint'));},
+  approve(el){const p=PENDING.find(x=>x.id===el.dataset.id);PENDING=PENDING.filter(x=>x!==p);render();toast(t('approvedA'));$('#view h1').focus();},
+  reject(el){const id=el.dataset.id;const p=PENDING.find(x=>x.id===id);openDialog({title:t('rejectTitle'),confirm:t('reject'),danger:true,
+    body:`<p><strong>${esc(L(p.org))}</strong></p><div class="field"><label for="rj">${t('rejectReason')} <span class="opt">(${t('optional')})</span></label><p class="hint" id="rj-h">${t('rejectHint')}</p><textarea id="rj" aria-describedby="rj-h" style="min-height:90px"></textarea></div>`,
+    onConfirm(){PENDING=PENDING.filter(x=>x.id!==id);render();toast(t('rejectedA'));$('#view h1').focus();}});},
+  tab(el){S.lookupTab=el.dataset.tab;render();$('#tab-'+S.lookupTab).focus();},
+  toggleLookup(el){const x=LK[S.lookupTab][+el.dataset.i];x[2]=x[2]?0:1;rerenderKeep();toast(t('updatedToast'));},
+  editLookup(el){const i=+el.dataset.i;const x=LK[S.lookupTab][i];openDialog({title:t('editItem'),confirm:t('save'),
+    body:`${field({id:'ed-ar',label:t('nameAr'),value:x[0],attrs:'dir="rtl" lang="ar"'})}${field({id:'ed-en',label:t('nameEn'),value:x[1],attrs:'dir="ltr" lang="en"'})}`,
+    onConfirm(d){x[0]=d.querySelector('#ed-ar').value;x[1]=d.querySelector('#ed-en').value;render();toast(t('updatedToast'));}});},
+};
+
+/* ======================= Event wiring ======================= */
+document.addEventListener('click',e=>{
+  const rs=e.target.closest('[data-role-switch]');
+  if(rs){S.role=rs.dataset.roleSwitch;go(ROLE_HOME[S.role]);return;}
+  const g=e.target.closest('[data-go]');
+  if(g){e.preventDefault();const o={};if(g.dataset.job)o.jobId=+g.dataset.job;if(g.dataset.seeker)o.seekerId=g.dataset.seeker;if(g.dataset.role)o.role=g.dataset.role;
+    if(g.dataset.go==='S-05')o.reset=true;if(g.dataset.go==='S-16'){S.closeOutcome='hired';S.closeWho='';}go(g.dataset.go,o);return;}
+  const a=e.target.closest('[data-act]');
+  if(a&&ACT[a.dataset.act]){ACT[a.dataset.act](a,e);}
+});
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('form[data-submit]');if(!f)return;e.preventDefault();
+  if(!f.reportValidity())return;SUBMIT[f.dataset.submit](f);
+});
+let saveT;
+function markSaving(){const s=$('#save-state');if(!s)return;s.innerHTML=`${icon('clock')}<span>${t('saving')}</span>`;clearTimeout(saveT);saveT=setTimeout(()=>{const s2=$('#save-state');if(s2)s2.innerHTML=`${icon('check')}<span>${t('saved')}</span>`;},700);}
+function onField(e){
+  const el=e.target;
+  if(el.dataset.bind){const v=el.type==='checkbox'?el.checked:el.value;setPath(S.p,el.dataset.bind,v);markSaving();
+    if(el.dataset.bind==='birth'){const a=ageFrom(v);const out=$('#age-val');if(out)out.textContent=a??'—';}
+    if(el.dataset.rerender&&e.type==='change')rerenderKeep();}
+  if(el.name==='outcome'&&e.type==='change'){S.closeOutcome=el.value;rerenderKeep();}
+  if(el.id==='cj-who')S.closeWho=el.value;
+  if(el.dataset.filter){const v=el.type==='checkbox'?el.checked:el.value;setPath(S,el.dataset.filter,v);
+    const box=$('#job-results')?'job-results':$('#user-results')?'user-results':'audit-results';
+    const fn={'job-results':jobResults,'user-results':userResults,'audit-results':auditResults}[box];document.getElementById(box).innerHTML=fn();}
+  if(el.dataset.actChange==='cvPick'&&e.type==='change'&&el.files&&el.files[0]){const f=el.files[0];
+    S.p.cv={name:f.name,size:f.size>1e6?(f.size/1e6).toFixed(1)+' MB':Math.max(1,Math.round(f.size/1e3))+' KB'};markSaving();rerenderKeep();}
+}
+document.addEventListener('input',onField);
+document.addEventListener('change',onField);
+/* Tabs: arrow-key navigation */
+document.addEventListener('keydown',e=>{
+  const tab=e.target.closest('[role=tab]');if(!tab)return;
+  const keys=S.lang==='ar'?{ArrowLeft:1,ArrowRight:-1}:{ArrowLeft:-1,ArrowRight:1};if(!(e.key in keys))return;e.preventDefault();
+  const i=TABS.findIndex(x=>x[0]===S.lookupTab);const n=(i+keys[e.key]+TABS.length)%TABS.length;S.lookupTab=TABS[n][0];render();$('#tab-'+S.lookupTab).focus();
+});
+$('#screen-sel').addEventListener('change',e=>{const id=e.target.value;if(id==='S-04')S.verifyFor=S.role==='employer'?'employer':'seeker';go(id,id==='S-05'?{reset:true}:{});$('#screen-sel').focus();});
+
+S.closeOutcome='hired';
+render();
+</script>
+</body>
+</html>

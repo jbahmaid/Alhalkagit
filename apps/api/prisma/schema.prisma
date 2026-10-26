@@ -1,0 +1,786 @@
+// =============================================================================
+// منصة ربط الكفاءات المهنية — Prisma schema (PostgreSQL 16)
+// المرجع: docs/database.md (ERD، شرح الجداول، مصفوفة التتبع)
+//
+// اصطلاحات:
+// - المعرّفات uuid، وأسماء الجداول والأعمدة snake_case عبر @@map و @map.
+// - حذف ناعم بعمود deleted_at على الكيانات الأساسية.
+// - رقم الهوية/الجواز مشفّر في التطبيق (AES-256-GCM) مع بصمة HMAC-SHA256 فريدة.
+// - العمر لا يُخزّن، بل يحسب من birth_date.
+// - audit_log إضافة فقط: Trigger في الترحيل يمنع UPDATE و DELETE و TRUNCATE.
+// - قيود CHECK وعروض التقارير مكتوبة يدوياً في migrations/0001_init/migration.sql.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum UserRole {
+  SEEKER
+  EMPLOYER
+  ADMIN
+  SUPER_ADMIN
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION // سجّل ولم يؤكد بريده
+  ACTIVE
+  SUSPENDED // أوقفه المدير
+  DISABLED // عطّله المستخدم أو المدير
+
+  @@map("user_status")
+}
+
+enum Locale {
+  ar
+  en
+
+  @@map("locale")
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+
+  @@map("verification_purpose")
+}
+
+enum IdType {
+  NATIONAL_ID
+  PASSPORT
+
+  @@map("id_type")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("gender")
+}
+
+/// خطوات إكمال ملف الباحث بالترتيب (المعمارية §5)
+enum ProfileStep {
+  PERSONAL
+  TRIBE // الدار والفخذ
+  CONTACT
+  EDUCATION
+  EXPERIENCE
+  CV
+  COMPLETED
+
+  @@map("profile_step")
+}
+
+enum FilePurpose {
+  CV
+  OTHER
+
+  @@map("file_purpose")
+}
+
+enum CvAnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED // التحليل معطل وقت الرفع
+
+  @@map("cv_analysis_status")
+}
+
+enum EmployerApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+
+  @@map("employer_approval_status")
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  INTERNSHIP
+  FREELANCE
+
+  @@map("employment_type")
+}
+
+enum JobStatus {
+  OPEN
+  UNAVAILABLE
+
+  @@map("job_status")
+}
+
+enum JobClosedOutcome {
+  HIRED_VIA_PLATFORM
+  CLOSED_WITHOUT_HIRING
+
+  @@map("job_closed_outcome")
+}
+
+enum InterestStatus {
+  SUBMITTED
+  VIEWED // فتحه صاحب العمل
+  CONTACTED
+  HIRED
+  NOT_SELECTED
+  WITHDRAWN // سحبه الباحث
+
+  @@map("interest_status")
+}
+
+enum MatchLabel {
+  SUITABLE // مناسبة (>= عتبة suitable)
+  NEAR // مقاربة (>= عتبة near)
+  NONE
+
+  @@map("match_label")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE // حذف ناعم
+  HARD_DELETE // حذف نهائي (المدير فقط)
+  RESTORE
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  EMAIL_VERIFIED
+  PASSWORD_RESET
+  APPROVE
+  REJECT
+  SUSPEND
+  STATUS_CHANGE
+  VIEW_SENSITIVE // اطلاع على بيانات حساسة (فك تشفير الهوية، ملف باحث)
+  EXPORT
+
+  @@map("audit_action")
+}
+
+// -----------------------------------------------------------------------------
+// النواة: الحسابات والجلسات والصلاحيات
+// -----------------------------------------------------------------------------
+
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  /// يُخزّن بأحرف صغيرة (normalize في التطبيق)
+  email            String     @unique @db.VarChar(254)
+  passwordHash     String     @map("password_hash") /// Argon2id
+  role             UserRole
+  status           UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt  DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  locale           Locale     @default(ar)
+  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  failedLoginCount Int        @default(0) @map("failed_login_count")
+  lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  verificationCodes  EmailVerificationCode[]
+  refreshTokens      RefreshToken[]
+  permissions        UserPermission[]        @relation("UserPermissionUser")
+  grantedPermissions UserPermission[]        @relation("UserPermissionGrantor")
+  person             Person?
+  seekerProfile      SeekerProfile?
+  employer           Employer?
+  approvedEmployers  Employer[]              @relation("EmployerApprover")
+  files              UploadedFile[]
+  settingsUpdated    Setting[]
+
+  @@index([role, status])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+/// رموز التحقق لمرة واحدة (تأكيد البريد، استعادة كلمة المرور). الرمز نفسه لا يُخزّن، بل بصمته.
+model EmailVerificationCode {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  purpose     VerificationPurpose
+  codeHash    String              @map("code_hash") /// HMAC-SHA256 أو Argon2 للرمز
+  expiresAt   DateTime            @map("expires_at") @db.Timestamptz(3)
+  attempts    Int                 @default(0)
+  maxAttempts Int                 @default(5) @map("max_attempts")
+  consumedAt  DateTime?           @map("consumed_at") @db.Timestamptz(3)
+  sentTo      String              @map("sent_to") @db.VarChar(254)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("email_verification_codes")
+}
+
+/// رموز التحديث (جلسات). الرمز يُخزّن بصمةً فقط، مع تدوير ضمن عائلة واحدة لكشف إعادة الاستخدام.
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash") /// SHA-256 للرمز
+  familyId     String    @map("family_id") @db.Uuid
+  replacedById String?   @unique @map("replaced_by_id") @db.Uuid
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokeReason String?   @map("revoke_reason") @db.VarChar(64)
+  ip           String?   @db.VarChar(45)
+  userAgent    String?   @map("user_agent") @db.VarChar(512)
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy RefreshToken? @relation("TokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   RefreshToken? @relation("TokenRotation")
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// صلاحيات دقيقة (مثل lookups.manage، employers.approve، audit.read). FR-2.4.1
+model Permission {
+  id            String   @id @default(uuid()) @db.Uuid
+  code          String   @unique @db.VarChar(100)
+  descriptionAr String   @map("description_ar")
+  descriptionEn String   @map("description_en")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  roles RolePermission[]
+  users UserPermission[]
+
+  @@map("permissions")
+}
+
+/// الصلاحيات الافتراضية لكل دور.
+model RolePermission {
+  role         UserRole
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([role, permissionId])
+  @@map("role_permissions")
+}
+
+/// منح أو سحب صلاحية لمستخدم بعينه فوق صلاحيات دوره (granted=false تعني سحب).
+model UserPermission {
+  userId       String   @map("user_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  granted      Boolean  @default(true)
+  grantedById  String?  @map("granted_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user       User       @relation("UserPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy  User?      @relation("UserPermissionGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("user_permissions")
+}
+
+// -----------------------------------------------------------------------------
+// النواة: القوائم المرجعية (يديرها المدير، بالعربية والإنجليزية)
+// -----------------------------------------------------------------------------
+
+/// الدار. FR-2.1.3
+model Dar {
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String    @unique @db.VarChar(64)
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  fakhdhs Fakhdh[]
+  persons Person[]
+
+  @@index([isActive, sortOrder])
+  @@map("dars")
+}
+
+/// الفخذ. FR-2.1.4. dar_id اختياري: المتطلبات تذكر قائمتين مستقلتين، والربط بالدار يتيح تصفية الأفخاذ حسب الدار متى أدخله المدير.
+model Fakhdh {
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String    @unique @db.VarChar(64)
+  darId     String?   @map("dar_id") @db.Uuid
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  dar     Dar?     @relation(fields: [darId], references: [id], onDelete: SetNull)
+  persons Person[]
+
+  @@index([darId])
+  @@index([isActive, sortOrder])
+  @@map("fakhdhs")
+}
+
+/// القطاع (للفرص، وأصحاب العمل، والخبرات، وتحليل السيرة).
+model Sector {
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String    @unique @db.VarChar(64)
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  employers           Employer[]
+  jobs                Job[]
+  experiencePositions ExperiencePosition[]
+  cvAnalysesSuggested CvAnalysis[]         @relation("CvSuggestedSector")
+  cvAnalysesCorrected CvAnalysis[]         @relation("CvCorrectedSector")
+
+  @@index([isActive, sortOrder])
+  @@map("sectors")
+}
+
+/// المستوى التعليمي. rank يحدد الترتيب لمقارنة "يساوي المطلوب أو أعلى" في المطابقة.
+model EducationLevel {
+  id        String    @id @default(uuid()) @db.Uuid
+  code      String    @unique @db.VarChar(64)
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  rank      Int       @unique
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  educations   SeekerEducation[]
+  requiredJobs Job[]
+
+  @@index([isActive, sortOrder])
+  @@map("education_levels")
+}
+
+/// الدولة (الجنسية، دولة التخرج، دولة الفرصة). iso_code بصيغة ISO 3166-1 alpha-2.
+model Country {
+  id        String    @id @default(uuid()) @db.Uuid
+  isoCode   String    @unique @map("iso_code") @db.Char(2)
+  nameAr    String    @map("name_ar") @db.VarChar(150)
+  nameEn    String    @map("name_en") @db.VarChar(150)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  nationals  Person[]
+  educations SeekerEducation[]
+  jobs       Job[]
+
+  @@index([isActive, sortOrder])
+  @@map("countries")
+}
+
+// -----------------------------------------------------------------------------
+// النواة: الشخص (مشترك بين التوظيف والخدمات الاجتماعية مستقبلاً، FR-2.6.1)
+// -----------------------------------------------------------------------------
+
+/// FR-2.1.2 إلى FR-2.1.5. user_id اختياري ليتسع لأشخاص بلا حساب في الخدمات الاجتماعية لاحقاً.
+model Person {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String?   @unique @map("user_id") @db.Uuid
+  // الاسم الرباعي
+  firstName          String    @map("first_name") @db.VarChar(100)
+  fatherName         String    @map("father_name") @db.VarChar(100)
+  grandfatherName    String    @map("grandfather_name") @db.VarChar(100)
+  familyName         String    @map("family_name") @db.VarChar(100)
+  // الهوية: idNumberEncrypted = base64(iv | authTag | ciphertext) بـ AES-256-GCM
+  idType             IdType    @map("id_type")
+  idNumberEncrypted  String    @map("id_number_encrypted")
+  /// HMAC-SHA256(مفتاح منفصل, idType + ":" + الرقم بعد التطبيع)، hex، لكشف التكرار
+  idNumberHash       String    @unique @map("id_number_hash") @db.Char(64)
+  idNumberKeyVersion Int       @default(1) @map("id_number_key_version")
+  gender             Gender
+  birthDate          DateTime  @map("birth_date") @db.Date
+  nationalityId      String    @map("nationality_id") @db.Uuid
+  hasSpecialNeeds    Boolean   @default(false) @map("has_special_needs")
+  darId              String?   @map("dar_id") @db.Uuid
+  fakhdhId           String?   @map("fakhdh_id") @db.Uuid
+  // بيانات التواصل الإلزامية (FR-2.1.5). البريد هنا قد يختلف عن بريد الدخول.
+  mobile             String?   @db.VarChar(20) /// E.164
+  email              String?   @db.VarChar(254)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  nationality   Country        @relation(fields: [nationalityId], references: [id], onDelete: Restrict)
+  dar           Dar?           @relation(fields: [darId], references: [id], onDelete: Restrict)
+  fakhdh        Fakhdh?        @relation(fields: [fakhdhId], references: [id], onDelete: Restrict)
+  seekerProfile SeekerProfile?
+
+  @@index([darId])
+  @@index([fakhdhId])
+  @@index([nationalityId])
+  @@index([gender])
+  @@index([birthDate])
+  @@index([mobile])
+  @@index([deletedAt])
+  @@map("persons")
+}
+
+// -----------------------------------------------------------------------------
+// التوظيف: الباحث
+// -----------------------------------------------------------------------------
+
+/// ملف الباحث. person_id يُملأ بعد خطوة البيانات الشخصية.
+model SeekerProfile {
+  id                String      @id @default(uuid()) @db.Uuid
+  userId            String      @unique @map("user_id") @db.Uuid
+  personId          String?     @unique @map("person_id") @db.Uuid
+  completionStep    ProfileStep @default(PERSONAL) @map("completion_step")
+  completedAt       DateTime?   @map("completed_at") @db.Timestamptz(3)
+  /// FR-2.1.7
+  hasExperience     Boolean?    @map("has_experience")
+  /// FR-2.1.8، null عند عدم وجود خبرة
+  yearsOfExperience Int?        @map("years_of_experience")
+  /// موافقة صريحة على مشاركة البيانات مع صاحب العمل عند طلب الاهتمام (المعمارية §8)
+  shareConsentAt    DateTime?   @map("share_consent_at") @db.Timestamptz(3)
+  /// السيرة الذاتية الحالية (FR-2.1.9)
+  currentCvFileId   String?     @unique @map("current_cv_file_id") @db.Uuid
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt         DateTime?   @map("deleted_at") @db.Timestamptz(3)
+
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  person             Person?              @relation(fields: [personId], references: [id], onDelete: Restrict)
+  currentCvFile      UploadedFile?        @relation("SeekerCurrentCv", fields: [currentCvFileId], references: [id], onDelete: SetNull)
+  educations         SeekerEducation[]
+  experiences        ExperiencePosition[]
+  experienceContacts ExperienceContact[]
+  cvAnalyses         CvAnalysis[]
+  interestRequests   InterestRequest[]
+  matchScores        MatchScore[]
+  hiredForJobs       Job[]                @relation("JobHiredSeeker")
+
+  @@index([completionStep])
+  @@index([deletedAt])
+  @@map("seeker_profiles")
+}
+
+/// البيانات التعليمية. FR-2.1.6. يُسمح بأكثر من مؤهل، والأعلى rank يُعتمد في المطابقة والتقارير.
+model SeekerEducation {
+  id               String    @id @default(uuid()) @db.Uuid
+  seekerId         String    @map("seeker_id") @db.Uuid
+  educationLevelId String    @map("education_level_id") @db.Uuid
+  graduationYear   Int?      @map("graduation_year") @db.SmallInt
+  institution      String    @db.VarChar(200)
+  countryId        String    @map("country_id") @db.Uuid
+  /// التخصص (اختياري، يفيد عامل الكلمات في المطابقة)
+  fieldOfStudy     String?   @map("field_of_study") @db.VarChar(200)
+  sortOrder        Int       @default(0) @map("sort_order")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  seeker         SeekerProfile  @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  educationLevel EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Restrict)
+  country        Country        @relation(fields: [countryId], references: [id], onDelete: Restrict)
+
+  @@index([seekerId, sortOrder])
+  @@index([educationLevelId])
+  @@map("seeker_educations")
+}
+
+/// المناصب السابقة. FR-2.1.8 (منصب 1، 2، ... مع من تاريخ إلى تاريخ). end_date فارغ يعني "حتى الآن".
+model ExperiencePosition {
+  id           String    @id @default(uuid()) @db.Uuid
+  seekerId     String    @map("seeker_id") @db.Uuid
+  title        String    @db.VarChar(200)
+  organization String?   @db.VarChar(200)
+  sectorId     String?   @map("sector_id") @db.Uuid
+  startDate    DateTime  @map("start_date") @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
+  sortOrder    Int       @default(0) @map("sort_order")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  seeker   SeekerProfile       @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  sector   Sector?             @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  contacts ExperienceContact[]
+
+  @@index([seekerId, sortOrder])
+  @@index([sectorId])
+  @@map("experience_positions")
+}
+
+/// "معرّف للتواصل والتحقق من الخبرة" FR-2.1.8. يرتبط بالباحث، واختيارياً بمنصب محدد.
+model ExperienceContact {
+  id           String    @id @default(uuid()) @db.Uuid
+  seekerId     String    @map("seeker_id") @db.Uuid
+  positionId   String?   @map("position_id") @db.Uuid
+  name         String    @db.VarChar(200)
+  jobTitle     String?   @map("job_title") @db.VarChar(200)
+  organization String?   @db.VarChar(200)
+  phone        String?   @db.VarChar(20)
+  email        String?   @db.VarChar(254)
+  notes        String?   @db.VarChar(500)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  seeker   SeekerProfile       @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  position ExperiencePosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  @@index([seekerId])
+  @@index([positionId])
+  @@map("experience_contacts")
+}
+
+// -----------------------------------------------------------------------------
+// النواة: الملفات
+// -----------------------------------------------------------------------------
+
+/// ملف مرفوع إلى MinIO (خاص). storage_key مسار الكائن، ولا يُخزّن رابط عام.
+model UploadedFile {
+  id           String      @id @default(uuid()) @db.Uuid
+  ownerUserId  String      @map("owner_user_id") @db.Uuid
+  purpose      FilePurpose
+  bucket       String      @db.VarChar(63)
+  storageKey   String      @unique @map("storage_key") @db.VarChar(512)
+  originalName String      @map("original_name") @db.VarChar(255)
+  mimeType     String      @map("mime_type") @db.VarChar(127)
+  sizeBytes    Int         @map("size_bytes")
+  sha256       String?     @db.Char(64)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt    DateTime?   @map("deleted_at") @db.Timestamptz(3)
+
+  owner      User           @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  cvOfSeeker SeekerProfile? @relation("SeekerCurrentCv")
+  cvAnalyses CvAnalysis[]
+
+  @@index([ownerUserId, purpose])
+  @@index([deletedAt])
+  @@map("uploaded_files")
+}
+
+/// نتيجة تحليل السيرة بـ Claude (معطل افتراضياً). FR-2.1.9، المعمارية §7.
+model CvAnalysis {
+  id                String           @id @default(uuid()) @db.Uuid
+  seekerId          String           @map("seeker_id") @db.Uuid
+  fileId            String           @map("file_id") @db.Uuid
+  status            CvAnalysisStatus @default(PENDING)
+  model             String?          @db.VarChar(100)
+  suggestedSectorId String?          @map("suggested_sector_id") @db.Uuid
+  /// ["skill", ...]
+  skills            Json?
+  /// سنوات الخبرة المستنتجة من السيرة
+  inferredYears     Int?             @map("inferred_years")
+  /// 3 إلى 5 نصائح بالعربية: ["...", ...]
+  tipsAr            Json?            @map("tips_ar")
+  /// 3 to 5 tips in English
+  tipsEn            Json?            @map("tips_en")
+  /// تصحيح الباحث للقطاع المقترح
+  correctedSectorId String?          @map("corrected_sector_id") @db.Uuid
+  correctedAt       DateTime?        @map("corrected_at") @db.Timestamptz(3)
+  error             String?
+  inputTokens       Int?             @map("input_tokens")
+  outputTokens      Int?             @map("output_tokens")
+  startedAt         DateTime?        @map("started_at") @db.Timestamptz(3)
+  completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  seeker          SeekerProfile @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  file            UploadedFile  @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  suggestedSector Sector?       @relation("CvSuggestedSector", fields: [suggestedSectorId], references: [id], onDelete: SetNull)
+  correctedSector Sector?       @relation("CvCorrectedSector", fields: [correctedSectorId], references: [id], onDelete: SetNull)
+
+  @@index([seekerId, createdAt(sort: Desc)])
+  @@index([fileId])
+  @@index([status])
+  @@map("cv_analyses")
+}
+
+// -----------------------------------------------------------------------------
+// التوظيف: صاحب العمل (جدول مستقل، متاح للمدراء فقط، FR-2.2.2)
+// -----------------------------------------------------------------------------
+
+model Employer {
+  id               String                 @id @default(uuid()) @db.Uuid
+  userId           String                 @unique @map("user_id") @db.Uuid
+  contactName      String                 @map("contact_name") @db.VarChar(200)
+  organizationName String                 @map("organization_name") @db.VarChar(200)
+  sectorId         String                 @map("sector_id") @db.Uuid
+  email            String                 @db.VarChar(254)
+  phone            String                 @db.VarChar(20)
+  approvalStatus   EmployerApprovalStatus @default(PENDING) @map("approval_status")
+  approvedById     String?                @map("approved_by_id") @db.Uuid
+  approvedAt       DateTime?              @map("approved_at") @db.Timestamptz(3)
+  rejectionReason  String?                @map("rejection_reason") @db.VarChar(500)
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?              @map("deleted_at") @db.Timestamptz(3)
+
+  user       User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  sector     Sector @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  approvedBy User?  @relation("EmployerApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  jobs       Job[]
+
+  @@index([approvalStatus, createdAt])
+  @@index([sectorId])
+  @@index([deletedAt])
+  @@map("employers")
+}
+
+// -----------------------------------------------------------------------------
+// التوظيف: الفرص وطلبات الاهتمام والمطابقة
+// -----------------------------------------------------------------------------
+
+/// الفرصة. لا تحمل أي بيان عن صاحب العمل سوى employer_id (FR-2.3.1).
+model Job {
+  id                       String            @id @default(uuid()) @db.Uuid
+  employerId               String            @map("employer_id") @db.Uuid
+  title                    String            @db.VarChar(200)
+  description              String
+  sectorId                 String            @map("sector_id") @db.Uuid
+  city                     String            @db.VarChar(120)
+  countryId                String            @map("country_id") @db.Uuid
+  requiredEducationLevelId String?           @map("required_education_level_id") @db.Uuid
+  minYearsExperience       Int               @default(0) @map("min_years_experience")
+  employmentType           EmploymentType    @map("employment_type")
+  status                   JobStatus         @default(OPEN)
+  /// FR-2.3.4، FR-2.3.5. يُملأ عند الإغلاق فقط (قيد CHECK في الترحيل).
+  closedOutcome            JobClosedOutcome? @map("closed_outcome")
+  hiredSeekerId            String?           @map("hired_seeker_id") @db.Uuid
+  closedAt                 DateTime?         @map("closed_at") @db.Timestamptz(3)
+  publishedAt              DateTime          @default(now()) @map("published_at") @db.Timestamptz(3)
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt                DateTime?         @map("deleted_at") @db.Timestamptz(3)
+
+  employer               Employer          @relation(fields: [employerId], references: [id], onDelete: Restrict)
+  sector                 Sector            @relation(fields: [sectorId], references: [id], onDelete: Restrict)
+  country                Country           @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  requiredEducationLevel EducationLevel?   @relation(fields: [requiredEducationLevelId], references: [id], onDelete: SetNull)
+  hiredSeeker            SeekerProfile?    @relation("JobHiredSeeker", fields: [hiredSeekerId], references: [id], onDelete: SetNull)
+  interestRequests       InterestRequest[]
+  matchScores            MatchScore[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([employerId, status])
+  @@index([sectorId, status])
+  @@index([countryId])
+  @@index([closedOutcome])
+  @@index([deletedAt])
+  @@map("jobs")
+}
+
+/// طلب الاهتمام. FR-2.3.3. زوج (فرصة، باحث) فريد؛ السحب بالحالة WITHDRAWN لا بالحذف.
+model InterestRequest {
+  id               String         @id @default(uuid()) @db.Uuid
+  jobId            String         @map("job_id") @db.Uuid
+  seekerId         String         @map("seeker_id") @db.Uuid
+  status           InterestStatus @default(SUBMITTED)
+  /// لقطة لموافقة المشاركة وقت الطلب
+  consentAt        DateTime       @map("consent_at") @db.Timestamptz(3)
+  employerViewedAt DateTime?      @map("employer_viewed_at") @db.Timestamptz(3)
+  statusChangedAt  DateTime?      @map("status_changed_at") @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  job    Job           @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  seeker SeekerProfile @relation(fields: [seekerId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, seekerId])
+  @@index([seekerId, createdAt(sort: Desc)])
+  @@index([jobId, status])
+  @@map("interest_requests")
+}
+
+/// ذاكرة مؤقتة لدرجة المطابقة (0..100) لكل زوج. FR-2.3.2، المعمارية §6. يعاد حسابها عند تغير الملف أو الفرصة أو الإعدادات.
+model MatchScore {
+  id         String     @id @default(uuid()) @db.Uuid
+  seekerId   String     @map("seeker_id") @db.Uuid
+  jobId      String     @map("job_id") @db.Uuid
+  score      Int        @db.SmallInt
+  label      MatchLabel
+  /// تفصيل العوامل: {"sector":40,"education":25,"experience":0,"keywords":5}
+  breakdown  Json?
+  computedAt DateTime   @default(now()) @map("computed_at") @db.Timestamptz(3)
+
+  seeker SeekerProfile @relation(fields: [seekerId], references: [id], onDelete: Cascade)
+  job    Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([seekerId, jobId])
+  @@index([seekerId, score(sort: Desc)])
+  @@index([jobId, score(sort: Desc)])
+  @@map("match_scores")
+}
+
+// -----------------------------------------------------------------------------
+// الإعدادات وسجل التدقيق
+// -----------------------------------------------------------------------------
+
+/// إعدادات المدير: أوزان المطابقة وحدودها ومفاتيح الميزات. متغيرات البيئة تتقدم على مفاتيح الميزات.
+model Setting {
+  key           String   @id @db.VarChar(100)
+  value         Json
+  descriptionAr String?  @map("description_ar")
+  descriptionEn String?  @map("description_en")
+  updatedById   String?  @map("updated_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("settings")
+}
+
+/// سجل التدقيق. FR-2.4.2. إضافة فقط: Trigger يمنع UPDATE/DELETE/TRUNCATE.
+/// actor_user_id بلا مفتاح أجنبي عمداً، كي لا يعدّل حذف مستخدم أي صف هنا.
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  actorUserId String?     @map("actor_user_id") @db.Uuid
+  actorRole   UserRole?   @map("actor_role")
+  action      AuditAction
+  entity      String      @db.VarChar(64) /// اسم الجدول أو النموذج
+  entityId    String?     @map("entity_id") @db.VarChar(64)
+  /// القيم قبل وبعد، مع إخفاء الحقول المشفرة وبصمات الأسرار
+  before      Json?
+  after       Json?
+  ip          String?     @db.VarChar(45)
+  userAgent   String?     @map("user_agent") @db.VarChar(512)
+  requestId   String?     @map("request_id") @db.VarChar(64)
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([entity, entityId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_log")
+}
