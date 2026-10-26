@@ -65,6 +65,22 @@ const PATHS = {
     </>
   ),
   spark: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  upload: <path d="M12 16V4m0 0-5 5m5-5 5 5M4 20h16" />,
+  download: <path d="M12 4v12m0 0-5-5m5 5 5-5M4 20h16" />,
+  file: (
+    <>
+      <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" />
+      <path d="M14 3v5h5" />
+    </>
+  ),
+  cap: (
+    <>
+      <path d="m2 9 10-5 10 5-10 5z" />
+      <path d="M6 11v5c3 2 9 2 12 0v-5" />
+    </>
+  ),
+  pencil: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;
