@@ -1,0 +1,219 @@
+# Sanad: the whole platform on one machine.
+#
+#   docker compose up --build -d      # start (first run builds the images)
+#   docker compose logs api           # shows the admin's temporary password on first run
+#   docker compose down               # stop (data is kept)
+#   docker compose down -v            # stop AND delete all data (fresh start)
+#
+# No .env file is needed: every value below has a safe local default (${VAR:-default}).
+# To change one, copy .env.example to .env and edit it. Secret keys are generated on first
+# start and kept in the "secrets" volume; they are never stored in the repository.
+name: sanad
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-sanad}:${POSTGRES_PASSWORD:-sanad-local-only}@postgres:5432/${POSTGRES_DB:-sanad}?schema=public
+  REDIS_URL: redis://redis:6379
+  PORT: '4000'
+  PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+  COOKIE_SECURE: ${COOKIE_SECURE:-}
+  SECRETS_FILE: /app/secrets/keys.json
+  ADMIN_PASSWORD_FILE: /app/secrets/admin-initial-password.txt
+  ID_ENCRYPTION_KEY: ${ID_ENCRYPTION_KEY:-}
+  ID_HASH_KEY: ${ID_HASH_KEY:-}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-}
+  ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
+  REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-Sanad <no-reply@sanad.local>}
+  SMS_ENABLED: ${SMS_ENABLED:-false}
+  SMS_PROVIDER: ${SMS_PROVIDER:-log}
+  CV_ANALYSIS_ENABLED: ${CV_ANALYSIS_ENABLED:-false}
+  CV_ANALYSIS_MODEL: ${CV_ANALYSIS_MODEL:-claude-opus-5-5}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  S3_ENDPOINT: http://minio:9000
+  S3_BUCKET: ${S3_BUCKET:-cvs}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:-sanad}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:-sanad-local-only}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  THROTTLE_ENABLED: ${THROTTLE_ENABLED:-true}
+  LOG_LEVEL: ${LOG_LEVEL:-log}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sanad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sanad-local-only}
+      POSTGRES_DB: ${POSTGRES_DB:-sanad}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    # Object storage for CV files (S3 compatible). The bucket is private.
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-sanad}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-sanad-local-only}
+      MINIO_SKIP_CLIENT: 'yes'
+    volumes:
+      - miniodata:/bitnami/minio/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  minio-init:
+    # One-shot job: creates the private "cvs" bucket, then exits.
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    restart: 'no'
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-sanad}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-sanad-local-only}
+      S3_BUCKET: ${S3_BUCKET:-cvs}
+      MC_CONFIG_DIR: /tmp/.mc
+    entrypoint: ['/bin/bash', '-c']
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" >/dev/null &&
+        mc mb --ignore-existing "local/$$S3_BUCKET" &&
+        mc anonymous set none "local/$$S3_BUCKET" &&
+        echo "bucket $$S3_BUCKET is ready (private)"
+
+  mailpit:
+    # Local mail catcher: every email the platform sends shows up at http://localhost:8025
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_PORT:-8025}:8025'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:8025/livez']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: sanad-api:local
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-jbahmaid@gmail.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      SEED_SAMPLE_TRIBE_DATA: ${SEED_SAMPLE_TRIBE_DATA:-true}
+    volumes:
+      - secrets:/app/secrets
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+
+  worker:
+    # Background jobs (sending emails). Same image as the API, different command.
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: sanad-api:local
+    restart: unless-stopped
+    command: ['node', 'dist/worker.js']
+    environment:
+      <<: *api-env
+    volumes:
+      - secrets:/app/secrets:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      # the worker touches this file every 5 seconds while it is consuming the queue
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const t=+require('fs').readFileSync('/tmp/worker-heartbeat','utf8');process.exit(Date.now()-t<30000?0:1)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: sanad-web:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+      API_INTERNAL_URL: http://api:4000
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/ar').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  secrets:
