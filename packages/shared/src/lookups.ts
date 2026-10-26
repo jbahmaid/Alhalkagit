@@ -16,6 +16,11 @@ export interface LookupItemDto {
   nameAr: string;
   nameEn: string;
   sortOrder: number;
+  /**
+   * Inactive items are still returned so existing records keep their names; forms offer only
+   * active ones (plus the record's current value).
+   */
+  isActive: boolean;
   /** education-levels only */
   rank?: number;
   /** fakhdhs only */
