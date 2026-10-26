@@ -12,12 +12,16 @@
  *   ADMIN_PASSWORD          كلمة مروره (12 حرفاً على الأقل). إن غابت تُولّد مؤقتة وتُطبع مرة واحدة.
  *   ADMIN_RESET_PASSWORD    "true" لإعادة تعيين كلمة مرور الحساب (عند نسيانها).
  *   SEED_SAMPLE_TRIBE_DATA  "false" لتخطي الديار والأفخاذ التجريبية (افتراضياً تُضاف).
+ *   ADMIN_PASSWORD_FILE     مسار ملف تُحفظ فيه كلمة المرور المؤقتة المولّدة (في Docker: /app/secrets/admin-initial-password.txt
+ *                           على وحدة تخزين دائمة)، ليسترجعها صاحب المشروع بأمر موثق في README.
  *
  * التشغيل: npx prisma db seed  (مع "prisma": {"seed": "tsx prisma/seed.ts"} في package.json)
  */
 import { PrismaClient, Prisma, UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { ALL_COUNTRIES } from './data/countries';
 
 const prisma = new PrismaClient();
@@ -291,13 +295,13 @@ async function seedAdmin(): Promise<string | null> {
   }
   const generated = !password;
   if (!password && (!existing || resetPassword)) {
-    password = randomBytes(12).toString('base64url');
+    password = generateReadablePassword();
   }
   const hash = () => argon2.hash(password as string, { type: argon2.argon2id });
   const announce = () => {
     if (generated) {
-      console.log(`[seed] Admin login: username "${SYSTEM_ADMIN_USERNAME}", temporary password: ${password}`);
-      console.log('[seed] You will be asked to change it on first login. It is not shown again.');
+      saveInitialPassword(password as string);
+      printAdminBanner(password as string, false);
     }
   };
 
@@ -330,8 +334,64 @@ async function seedAdmin(): Promise<string | null> {
       data: { passwordHash: await hash(), mustChangePassword: generated, failedLoginCount: 0, lockedUntil: null },
     });
     announce();
+  } else if (existing.mustChangePassword) {
+    // تذكير عند كل تشغيل حتى يغيّر المدير كلمة المرور المؤقتة (يُحذف الملف بعد تغييرها).
+    const saved = readInitialPassword();
+    if (saved) printAdminBanner(saved, true);
   }
   return existing.id;
+}
+
+// ---------------------------------------------------------------------------
+// كلمة مرور المدير المؤقتة: لافتة واضحة في السجل + ملف على وحدة التخزين الدائمة
+// ---------------------------------------------------------------------------
+
+/** 16 characters without look-alikes (0/O, 1/l/I) or symbols, always with letters and digits. */
+function generateReadablePassword(): string {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const all = letters + digits;
+  const bytes = randomBytes(16);
+  const chars = [...bytes].map((b) => all[b % all.length]);
+  chars[3] = digits[bytes[3] % digits.length];
+  chars[11] = letters[bytes[11] % letters.length];
+  return chars.join('');
+}
+
+function saveInitialPassword(password: string) {
+  const file = process.env.ADMIN_PASSWORD_FILE;
+  if (!file) return;
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, `${password}\n`, { mode: 0o600 });
+}
+
+function readInitialPassword(): string | null {
+  const file = process.env.ADMIN_PASSWORD_FILE;
+  if (!file || !existsSync(file)) return null;
+  return readFileSync(file, 'utf8').trim() || null;
+}
+
+function printAdminBanner(password: string, reminder: boolean) {
+  const file = process.env.ADMIN_PASSWORD_FILE;
+  const lines = [
+    reminder
+      ? 'تذكير: كلمة مرور المدير المؤقتة لم تُغيَّر بعد'
+      : 'حساب المدير جاهز: احفظ كلمة المرور المؤقتة',
+    reminder ? 'Reminder: the admin temporary password has not been changed yet' : 'Admin account ready: save this temporary password',
+    '',
+    `اسم الدخول / Username : ${SYSTEM_ADMIN_USERNAME}`,
+    `كلمة المرور / Password : ${password}`,
+    '',
+    'سيُطلب منك تغييرها عند أول دخول.',
+    'You will be asked to change it at first login.',
+    ...(file
+      ? ['', 'لعرضها لاحقاً / To show it again:', 'docker compose exec api cat ' + file]
+      : []),
+  ];
+  const width = Math.max(...lines.map((l) => [...l].length)) + 4;
+  const bar = '#'.repeat(width + 2);
+  const out = ['', bar, ...lines.map((l) => `#  ${l}${' '.repeat(width - [...l].length - 2)}#`), bar, ''];
+  console.log(out.join('\n'));
 }
 
 async function main() {

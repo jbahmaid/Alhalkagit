@@ -1,0 +1,17 @@
+{
+  "brand": "Sanad",
+  "tagline": "Connecting our people's talent with opportunity",
+  "footer": "You received this email because your address was used on Sanad. If it was not you, ignore it and nothing will happen.",
+  "codeLabel": "Code",
+  "expires": "The code is valid for {minutes} minutes. Do not share it with anyone.",
+  "verifyEmail": {
+    "subject": "Your Sanad activation code",
+    "heading": "Activate your account",
+    "intro": "Welcome to Sanad. Enter the code below on the verification page to activate your account."
+  },
+  "passwordReset": {
+    "subject": "Your Sanad password reset code",
+    "heading": "Reset your password",
+    "intro": "You asked to reset your password. Enter the code below, then choose a new password."
+  }
+}

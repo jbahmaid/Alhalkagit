@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-base text-text antialiased;
+    margin: 0;
+    line-height: 1.7;
+    overflow-wrap: break-word;
+  }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.35;
+  }
+  a {
+    color: var(--color-primary);
+  }
+  /* Visible 2px focus ring on every interactive element (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  [tabindex='-1']:focus {
+    outline: none;
+  }
+}

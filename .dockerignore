@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.tsbuildinfo
+**/next-env.d.ts
+.git
+.env
+.env.*
+!.env.example
+docs
+e2e
+secrets
