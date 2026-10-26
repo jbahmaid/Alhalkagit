@@ -98,7 +98,6 @@ describe('profile completion', () => {
     hasExperience: true,
     yearsOfExperience: 3,
     positionCount: 1,
-    hasVerifier: true,
     hasCv: false,
     completedAt: null,
   };
@@ -109,12 +108,17 @@ describe('profile completion', () => {
     expect(completionOf({ ...base, mobile: null }).completionStep).toBe('CONTACT');
     expect(completionOf({ ...base, hasEducation: false }).completionStep).toBe('EDUCATION');
     expect(completionOf({ ...base, positionCount: 0 }).completionStep).toBe('EXPERIENCE');
-    expect(completionOf({ ...base, hasVerifier: false }).completionStep).toBe('EXPERIENCE');
     expect(completionOf({ ...base, hasExperience: null }).completionStep).toBe('EXPERIENCE');
   });
 
+  it('does not require the verification contact (optional, owner decision)', () => {
+    const s = completionOf(base);
+    expect(s.steps.experience).toBe(true);
+    expect(s.completionStep).toBe('CV');
+  });
+
   it('treats "no experience" as complete and empty tribe lists as not required', () => {
-    const s = completionOf({ ...base, hasExperience: false, positionCount: 0, hasVerifier: false });
+    const s = completionOf({ ...base, hasExperience: false, positionCount: 0 });
     expect(s.steps.experience).toBe(true);
     const t = completionOf({
       ...base,

@@ -45,6 +45,7 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
 ) {
   const t = useTranslations('profile');
   const tv = useTranslations('validation');
+  const tc = useTranslations('common');
   const ex = profile.experience;
   const [has, setHas] = useState<string | null>(
     ex.hasExperience === null ? null : ex.hasExperience ? 'yes' : 'no',
@@ -83,6 +84,8 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
     requestAnimationFrame(() => addRef.current?.focus());
   }
 
+  const verifierGiven = () => !req(verName) || !req(verPhone) || !req(verEmail);
+
   function check(): FieldErrors {
     const e: FieldErrors = {};
     if (!has) e.hasExperience = tv('required');
@@ -106,10 +109,13 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
         else if (p.start && p.end < p.start) e[`${f}endDate`] = tv('dateOrder');
       }
     });
-    if (req(verName)) e['verifier.name'] = tv('required');
-    if (req(verPhone) && req(verEmail)) e['verifier.phone'] = tv('contactRequired');
-    else if (!req(verPhone) && !normalizePhone(verPhone)) e['verifier.phone'] = tv('phone');
-    if (!req(verEmail) && !isEmail(verEmail)) e['verifier.email'] = tv('email');
+    // The verification contact is optional; once any part is entered it must be complete.
+    if (verifierGiven()) {
+      if (req(verName)) e['verifier.name'] = tv('required');
+      if (req(verPhone) && req(verEmail)) e['verifier.phone'] = tv('contactRequired');
+      else if (!req(verPhone) && !normalizePhone(verPhone)) e['verifier.phone'] = tv('phone');
+      if (!req(verEmail) && !isEmail(verEmail)) e['verifier.email'] = tv('email');
+    }
     return e;
   }
 
@@ -127,7 +133,9 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
                 startDate: p.start,
                 endDate: p.current ? null : p.end,
               })),
-              verifier: { name: verName, phone: verPhone.trim() || null, email: verEmail.trim() || null },
+              verifier: verifierGiven()
+                ? { name: verName, phone: verPhone.trim() || null, email: verEmail.trim() || null }
+                : null,
             }
           : { hasExperience: false };
       const saved = await submit(check, () =>
@@ -249,11 +257,21 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
               {t('addPos')}
             </Button>
           </div>
-          <Group legend={t('verifier')}>
-            <p className="mb-3 mt-0 text-[13px] text-text-muted">{t('verifierHint')}</p>
+          <Group
+            legend={
+              <>
+                {t('verifier')}
+                <span className="ms-1 text-[13px] font-normal text-text-muted">({tc('optional')})</span>
+              </>
+            }
+          >
+            <p className="mb-3 mt-0 text-[13px] text-text-muted">
+              {t('verifierHint')} {t('verifierOptional')}
+            </p>
             <TextField
               id="w-ver-name"
               label={t('verName')}
+              required={false}
               value={verName}
               onChange={(e) => setVerName(e.target.value)}
               error={fe['verifier.name']}

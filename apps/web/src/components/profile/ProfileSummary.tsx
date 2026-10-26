@@ -133,11 +133,11 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                   </li>
                 ))}
               </ol>
-              {ex.verifier && (
-                <Kv
-                  rows={[
-                    [
-                      t('verifier'),
+              <Kv
+                rows={[
+                  [
+                    t('verifier'),
+                    ex.verifier ? (
                       <>
                         {ex.verifier.name}
                         {[ex.verifier.phone, ex.verifier.email].filter(Boolean).map((v) => (
@@ -145,11 +145,13 @@ export function ProfileSummary({ profile, lists }: { profile: ProfileDto; lists:
                             {v && v.startsWith('+966') ? localSaudiMobile(v) : v}
                           </span>
                         ))}
-                      </>,
-                    ],
-                  ]}
-                />
-              )}
+                      </>
+                    ) : (
+                      none
+                    ),
+                  ],
+                ]}
+              />
             </>
           ) : ex.hasExperience === false ? (
             <p className="m-0">{t('noExperience')}</p>

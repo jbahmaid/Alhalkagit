@@ -270,7 +270,19 @@ describe('ProfileService: experience and positions (unlimited)', () => {
     expect(await code(c.profiles.createPosition(c.user.id, pos('B', '2022-05')))).toBe('CONFLICT');
   });
 
-  it('the verifier needs a phone or an email', async () => {
+  it('completes the experience step without a verifier (optional, owner decision)', async () => {
+    const c = await setup();
+    await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
+    const dto = await c.profiles.updateExperience(c.user.id, {
+      hasExperience: true,
+      yearsOfExperience: 2,
+      positions: [pos('Analyst', '2023-01')],
+    });
+    expect(dto.experience.verifier).toBeNull();
+    expect(dto.steps.experience).toBe(true);
+  });
+
+  it('a verifier that is given still needs a phone or an email', async () => {
     const c = await setup();
     await c.profiles.updatePersonal(c.user.id, personal(c.sa.id));
     expect(

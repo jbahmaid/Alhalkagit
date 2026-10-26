@@ -356,6 +356,7 @@
       "continue": "Continue my profile",
       "start": "Start my profile",
       "view": "View my profile"
-    }
+    },
+    "verifierOptional": "If you add one, enter the name with a phone number or an email."
   }
 }

@@ -133,10 +133,9 @@ export class ProfileService {
     const person = profile.personId
       ? await this.db.person.findFirst({ where: { id: profile.personId } })
       : null;
-    const [education, positionCount, verifier] = await Promise.all([
+    const [education, positionCount] = await Promise.all([
       this.educationOf(profile.id),
       this.db.experiencePosition.count({ where: { seekerId: profile.id } }),
-      this.verifierOf(profile.id),
     ]);
     return {
       hasPerson: !!person,
@@ -149,7 +148,6 @@ export class ProfileService {
       hasExperience: profile.hasExperience,
       yearsOfExperience: profile.yearsOfExperience,
       positionCount,
-      hasVerifier: !!verifier,
       hasCv: !!profile.currentCvFileId,
       completedAt: profile.completedAt,
     };
