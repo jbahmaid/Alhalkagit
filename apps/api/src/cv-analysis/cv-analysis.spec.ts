@@ -31,7 +31,7 @@ function mockClient(response: Partial<Record<string, unknown>> | Error) {
   const parse = jest.fn(async () => {
     if (response instanceof Error) throw response;
     return {
-      model: 'claude-opus-5-5',
+      model: 'test-model',
       stop_reason: 'end_turn',
       usage: { input_tokens: 10, output_tokens: 5 },
       ...response,
@@ -43,16 +43,16 @@ function mockClient(response: Partial<Record<string, unknown>> | Error) {
 describe('AnthropicCvAnalyzer (mocked client, no network)', () => {
   it('sends only the CV text and the sector list, with structured output and fallback', async () => {
     const { client, parse } = mockClient({ parsed_output: GOOD });
-    const analyzer = new AnthropicCvAnalyzer(client, { model: 'claude-opus-5-5', fallback: true });
+    const analyzer = new AnthropicCvAnalyzer(client, { model: 'test-model', fallback: true });
     const out = await analyzer.analyze({ text: 'CV TEXT ONLY', sectors: SECTORS });
     expect(out).toEqual({
       result: { ...GOOD, skills: ['SQL', 'Power BI', 'Python'] },
-      model: 'claude-opus-5-5',
+      model: 'test-model',
       inputTokens: 10,
       outputTokens: 5,
     });
     const req = (parse.mock.calls[0] as any[])[0];
-    expect(req.model).toBe('claude-opus-5-5');
+    expect(req.model).toBe('test-model');
     expect(req.fallbacks).toBe('default');
     expect(req.betas).toEqual(['server-side-fallback-2026-07-01']);
     expect(req.output_config.format.type).toBe('json_schema');
@@ -145,7 +145,7 @@ describe('CvAnalysisProcessor', () => {
   it('stores a completed analysis and signals profile.updated', async () => {
     const analyze = jest.fn().mockResolvedValue({
       result: { ...GOOD, skills: ['SQL'] },
-      model: 'claude-opus-5-5',
+      model: 'test-model',
       inputTokens: 100,
       outputTokens: 20,
     });
