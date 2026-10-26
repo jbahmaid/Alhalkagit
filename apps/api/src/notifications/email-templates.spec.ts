@@ -58,6 +58,38 @@ describe('email templates', () => {
     expect(without.text).not.toContain('null');
   });
 
+  it('renders the email-change code, the change notice and the admin invite', () => {
+    const code = renderEmail({
+      template: 'emailChangeCode',
+      to: 'new@b.c',
+      locale: 'en',
+      vars: { code: '246810', minutes: 10 },
+    });
+    expect(code.html).toContain('246810');
+    expect(code.text).toContain('10');
+
+    const notice = renderEmail({
+      template: 'emailChanged',
+      to: 'old@b.c',
+      locale: 'ar',
+      vars: { newEmail: 'new@b.c' },
+    });
+    expect(notice.text).toContain('new@b.c');
+
+    const invite = renderEmail({
+      template: 'adminInvite',
+      to: 'admin2@b.c',
+      locale: 'ar',
+      vars: { name: 'سارة', login: 'sara', password: 'Temp0rary9xyz', link: 'https://x.test/ar/login' },
+    });
+    expect(invite.html).toContain('Temp0rary9xyz');
+    expect(invite.html).toContain('href="https://x.test/ar/login"');
+    expect(invite.text).toContain('sara');
+    // no empty expiry line under the temporary password
+    expect(invite.text).not.toMatch(/Temp0rary9xyz\n\n\n/);
+    expect(invite.html).not.toMatch(/margin:0"><\/p>/);
+  });
+
   it('renders the new-interest email with the job title and link only', () => {
     const m = renderEmail({
       template: 'newInterest',

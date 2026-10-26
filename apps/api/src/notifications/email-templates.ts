@@ -31,7 +31,8 @@ interface Body {
 function body(job: EmailJob, t: (typeof DICT)['ar']): Body {
   switch (job.template) {
     case 'verifyEmail':
-    case 'passwordReset': {
+    case 'passwordReset':
+    case 'emailChangeCode': {
       const s = t[job.template];
       return {
         subject: s.subject,
@@ -64,6 +65,26 @@ function body(job: EmailJob, t: (typeof DICT)['ar']): Body {
         footer: t.noticeFooter,
       };
     }
+    case 'emailChanged': {
+      const s = t.emailChanged;
+      return {
+        subject: s.subject,
+        heading: s.heading,
+        paragraphs: [fill(s.intro, job.vars)],
+        footer: t.noticeFooter,
+      };
+    }
+    case 'adminInvite': {
+      const s = t.adminInvite;
+      return {
+        subject: s.subject,
+        heading: fill(s.heading, job.vars),
+        paragraphs: [s.intro, `${s.loginLabel}: ${job.vars.login}`],
+        code: { label: s.passwordLabel, value: job.vars.password, expires: '' },
+        button: { label: s.button, href: job.vars.link },
+        footer: t.noticeFooter,
+      };
+    }
     case 'newInterest': {
       const s = t.newInterest;
       return {
@@ -90,8 +111,11 @@ export function renderEmail(job: EmailJob): EmailMessage {
     .join('\n          ');
   const code = b.code
     ? `<p style="font-size:13px;color:#56615C;margin:0 0 4px">${esc(b.code.label)}</p>
-          <p dir="ltr" style="font-size:32px;font-weight:700;letter-spacing:8px;margin:0 0 16px;color:#0E5E58;text-align:${align}">${esc(b.code.value)}</p>
-          <p style="font-size:14px;color:#56615C;margin:0">${esc(b.code.expires)}</p>`
+          <p dir="ltr" style="font-size:32px;font-weight:700;letter-spacing:8px;margin:0 0 16px;color:#0E5E58;text-align:${align};word-break:break-all">${esc(b.code.value)}</p>${
+            b.code.expires
+              ? `\n          <p style="font-size:14px;color:#56615C;margin:0">${esc(b.code.expires)}</p>`
+              : ''
+          }`
     : '';
   const button = b.button
     ? `<p style="margin:8px 0 0"><a href="${esc(b.button.href)}" style="display:inline-block;background:#0E5E58;color:#FFFFFF;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:10px">${esc(b.button.label)}</a></p>`
@@ -126,7 +150,7 @@ export function renderEmail(job: EmailJob): EmailMessage {
     '',
     b.heading,
     ...b.paragraphs,
-    ...(b.code ? ['', `${b.code.label}: ${b.code.value}`, b.code.expires] : []),
+    ...(b.code ? ['', `${b.code.label}: ${b.code.value}`, ...(b.code.expires ? [b.code.expires] : [])] : []),
     ...(b.button ? ['', `${b.button.label}: ${b.button.href}`] : []),
     '',
     b.footer,

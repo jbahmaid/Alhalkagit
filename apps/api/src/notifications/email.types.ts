@@ -19,7 +19,21 @@ export type EmailJob =
    * FR-2.3.3: a seeker expressed interest in the employer's job. Carries only the job title and
    * a link to the applicants page: never the seeker's ID number, dar or fakhdh.
    */
-  | { template: 'newInterest'; to: string; locale: Locale; vars: { jobTitle: string; link: string } };
+  | { template: 'newInterest'; to: string; locale: Locale; vars: { jobTitle: string; link: string } }
+  /** "My account": code sent to the new address before the login email changes. */
+  | { template: 'emailChangeCode'; to: string; locale: Locale; vars: { code: string; minutes: number } }
+  /** Sent to the old address after the login email changed. */
+  | { template: 'emailChanged'; to: string; locale: Locale; vars: { newEmail: string } }
+  /**
+   * A super admin created an admin account. Carries a temporary password that must be changed
+   * at first sign-in (mustChangePassword); the email is the only place it exists in clear.
+   */
+  | {
+      template: 'adminInvite';
+      to: string;
+      locale: Locale;
+      vars: { name: string; login: string; password: string; link: string };
+    };
 
 export interface EmailMessage {
   to: string;

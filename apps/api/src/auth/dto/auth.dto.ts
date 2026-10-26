@@ -88,3 +88,13 @@ export class ChangePasswordDto {
 export class UpdateMeDto {
   @IsIn(['ar', 'en']) locale!: 'ar' | 'en';
 }
+
+/** "My account": change the login email; a code goes to the new address. */
+export class RequestEmailChangeDto {
+  @Transform(lowerTrim) @IsEmail() @MaxLength(254) email!: string;
+  @IsString() @IsNotEmpty() @MaxLength(PASSWORD_MAX_LENGTH) currentPassword!: string;
+}
+
+export class ConfirmEmailChangeDto {
+  @Matches(OTP_PATTERN) code!: string;
+}
