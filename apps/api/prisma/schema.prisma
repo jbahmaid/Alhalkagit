@@ -184,6 +184,8 @@ model User {
   email            String     @unique @db.VarChar(254)
   /// اسم دخول اختياري (حساب المدير الأساسي: admin). يُخزّن بأحرف صغيرة
   username         String?    @unique @db.VarChar(64)
+  /// اسم العرض لحسابات المدراء (للباحث من persons، ولصاحب العمل من employers)
+  displayName      String?    @map("display_name") @db.VarChar(200)
   passwordHash     String     @map("password_hash") /// Argon2id
   /// حساب النظام الأساسي: لا يُحذف ولا يُعطّل ولا يُخفّض دوره (تفرضه مشغّلات قاعدة البيانات). البريد قابل للتعديل
   isSystemAccount  Boolean    @default(false) @map("is_system_account")
