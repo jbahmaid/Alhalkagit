@@ -111,6 +111,20 @@ export class FakeTable {
     list.forEach((r) => Object.assign(r, args.data));
     return { count: list.length };
   }
+  /** groupBy with `_count: { _all: true }` only (what the services use). */
+  async groupBy(args: Row) {
+    const groups = new Map<string, Row>();
+    for (const r of this.sorted(args.where)) {
+      const key = JSON.stringify((args.by as string[]).map((f) => r[f]));
+      const g = groups.get(key) ?? {
+        ...Object.fromEntries((args.by as string[]).map((f) => [f, r[f]])),
+        _count: { _all: 0 },
+      };
+      g._count._all += 1;
+      groups.set(key, g);
+    }
+    return [...groups.values()];
+  }
 }
 
 export interface FakeAudit {
@@ -173,6 +187,32 @@ export function createFakePrisma() {
     fakhdh: new FakeTable(() => ({ deletedAt: null, isActive: true, darId: null }), true),
     sector: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
     educationLevel: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
+    businessType: new FakeTable(() => ({ deletedAt: null, isActive: true }), true),
+    employer: new FakeTable(
+      () => ({ deletedAt: null, approvalStatus: 'PENDING', approvedAt: null, approvedById: null, rejectionReason: null }),
+      true,
+    ),
+    job: new FakeTable(
+      () => ({
+        deletedAt: null,
+        status: 'OPEN',
+        closedOutcome: null,
+        hiredSeekerId: null,
+        closedAt: null,
+        publishedAt: new Date(),
+        requiredEducationLevelId: null,
+        minYearsExperience: 0,
+        employmentType: 'FULL_TIME',
+      }),
+      true,
+    ),
+    interestRequest: new FakeTable(() => ({
+      status: 'SUBMITTED',
+      employerViewedAt: null,
+      statusChangedAt: null,
+    })),
+    matchScore: new FakeTable(() => ({ computedAt: new Date(), breakdown: null })),
+    setting: new FakeTable(),
     emailVerificationCode: new FakeTable(() => ({ attempts: 0, maxAttempts: 5, consumedAt: null })),
     refreshToken: new FakeTable(() => ({ revokedAt: null, revokeReason: null, replacedById: null })),
     permission: new FakeTable(),
