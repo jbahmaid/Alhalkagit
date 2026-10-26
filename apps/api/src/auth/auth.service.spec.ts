@@ -115,6 +115,61 @@ describe('AuthService: seeker sign-up and email verification', () => {
   });
 });
 
+describe('AuthService: employer sign-up', () => {
+  async function withLookups(ctx: ReturnType<typeof setup>) {
+    const sector = await ctx.prisma.db.sector.create({ data: { code: 'IT', nameAr: 'تقنية', nameEn: 'IT' } });
+    const bt = await ctx.prisma.db.businessType.create({
+      data: { code: 'PRIVATE', nameAr: 'خاص', nameEn: 'Private' },
+    });
+    return {
+      contactName: 'سارة',
+      organizationName: 'شركة الأفق',
+      sectorId: sector.id as string,
+      businessTypeId: bt.id as string,
+      email: 'hr@example.com',
+      phone: '0551234567',
+      password: 'Passw0rd!',
+      consentTerms: true as const,
+    };
+  }
+
+  it('creates a pending employer with its organization and emails a code', async () => {
+    const ctx = setup();
+    const dto = await withLookups(ctx);
+    await ctx.auth.signupEmployer({ ...dto, locale: 'en' });
+    const user = ctx.prisma.db.user.rows[0];
+    expect(user).toMatchObject({ role: 'EMPLOYER', status: 'PENDING_VERIFICATION', locale: 'en' });
+    expect(ctx.prisma.db.employer.rows[0]).toMatchObject({
+      userId: user.id,
+      organizationName: 'شركة الأفق',
+      phone: '+966551234567',
+    });
+    expect(ctx.prisma.db.employer.rows[0].approvalStatus ?? 'PENDING').toBe('PENDING');
+    expect(ctx.email.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ template: 'verifyEmail', locale: 'en' }),
+    );
+  });
+
+  it('rejects unknown lookups and a bad phone with field errors', async () => {
+    const ctx = setup();
+    const dto = await withLookups(ctx);
+    const p = ctx.auth.signupEmployer({
+      ...dto,
+      phone: '12',
+      businessTypeId: '00000000-0000-4000-8000-000000000000',
+    });
+    await expectCode(p, 'VALIDATION_FAILED');
+    expect(ctx.prisma.db.user.rows).toHaveLength(0);
+  });
+
+  it('refuses an email that belongs to a seeker', async () => {
+    const ctx = setup();
+    await activeSeeker(ctx);
+    const dto = await withLookups(ctx);
+    await expectCode(ctx.auth.signupEmployer({ ...dto, email: SIGNUP.email }), 'AUTH_EMAIL_TAKEN');
+  });
+});
+
 describe('AuthService: login and lockout', () => {
   it('logs in with email or with username', async () => {
     const ctx = setup();
