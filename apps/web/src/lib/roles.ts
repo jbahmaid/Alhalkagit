@@ -8,13 +8,13 @@ export type NavItem = { href: string; labelKey: string; enabled: boolean };
  */
 export const ROLE_NAV: Record<'SEEKER' | 'EMPLOYER' | 'ADMIN', NavItem[]> = {
   SEEKER: [
-    { href: '/seeker/jobs', labelKey: 'jobs', enabled: false },
-    { href: '/seeker/requests', labelKey: 'myRequests', enabled: false },
+    { href: '/seeker/jobs', labelKey: 'jobs', enabled: true },
+    { href: '/seeker/requests', labelKey: 'myRequests', enabled: true },
     { href: '/seeker/profile', labelKey: 'myProfile', enabled: true },
   ],
   EMPLOYER: [
     { href: '/employer', labelKey: 'dashboard', enabled: true },
-    { href: '/employer/jobs/new', labelKey: 'postJob', enabled: false },
+    { href: '/employer/jobs/new', labelKey: 'postJob', enabled: true },
     { href: '/employer/reports', labelKey: 'reports', enabled: false },
   ],
   ADMIN: [
