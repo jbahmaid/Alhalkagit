@@ -20,6 +20,11 @@ function load(type: LookupType): Promise<LookupItemDto[]> {
   return p;
 }
 
+/** Forgets a cached list after an admin changed it (S-19), so the next form reloads it. */
+export function invalidateLookups(type: LookupType): void {
+  cache.delete(type);
+}
+
 /** Loads the lookup lists a form needs (server order: sortOrder, so Saudi and the Gulf come first). */
 export function useLookups(types: LookupType[]): { lists: Lookups; ready: boolean; failed: boolean } {
   const key = types.join(',');
@@ -49,5 +54,20 @@ export function useLookupName() {
     (item: Pick<LookupItemDto, 'nameAr' | 'nameEn'> | undefined | null): string =>
       item ? (locale === 'ar' ? item.nameAr : item.nameEn) : '',
     [locale],
+  );
+}
+
+/**
+ * Dropdown options: active items only, plus the value(s) a record already has, so an item
+ * deactivated later (S-19) still shows on existing records but is not offered for new ones.
+ */
+export function useLookupOptions() {
+  const name = useLookupName();
+  return useCallback(
+    (list: LookupItemDto[] | undefined, ...keep: (string | null | undefined)[]) =>
+      (list ?? [])
+        .filter((x) => x.isActive || keep.includes(x.id))
+        .map((x) => ({ value: x.id, label: name(x) })),
+    [name],
   );
 }

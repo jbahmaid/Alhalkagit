@@ -5,9 +5,17 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { api } from '@/lib/api';
 import { isEmail } from '@/lib/errors';
-import { useLookupName } from '@/lib/lookups';
+import { useLookupOptions } from '@/lib/lookups';
 import { Alert, Card, Note, SelectField, TextField } from '@/components/ui';
-import { Grid2, req, useStepForm, type FieldErrors, type StepHandle, type StepProps } from './step-kit';
+import {
+  Grid2,
+  req,
+  useProfileApi,
+  useStepForm,
+  type FieldErrors,
+  type StepHandle,
+  type StepProps,
+} from './step-kit';
 
 /** Step 2: dar and fakhdh (FR-2.1.3, FR-2.1.4). The fakhdh list follows the chosen dar. */
 export const AffiliationStep = forwardRef<StepHandle, StepProps>(function AffiliationStep(
@@ -16,13 +24,17 @@ export const AffiliationStep = forwardRef<StepHandle, StepProps>(function Affili
 ) {
   const t = useTranslations('profile');
   const tv = useTranslations('validation');
-  const name = useLookupName();
-  const [darId, setDar] = useState(profile.affiliation.darId ?? '');
-  const [fakhdhId, setFakhdh] = useState(profile.affiliation.fakhdhId ?? '');
+  const options = useLookupOptions();
+  const { base } = useProfileApi();
+  const stored = profile.affiliation;
+  const [darId, setDar] = useState(stored.darId ?? '');
+  const [fakhdhId, setFakhdh] = useState(stored.fakhdhId ?? '');
   const { fieldErrors: fe, formError, submit } = useStepForm();
-  const dars = lists.dars ?? [];
+  // Only active items are required or offered; a value saved before it was deactivated stays.
+  const dars = (lists.dars ?? []).filter((d) => d.isActive);
   // A fakhdh linked to a dar shows only under it; an unlinked one shows under every dar.
-  const fakhdhs = (lists.fakhdhs ?? []).filter((f) => !f.darId || f.darId === darId);
+  const allFakhdhs = (lists.fakhdhs ?? []).filter((f) => !f.darId || f.darId === darId);
+  const fakhdhs = allFakhdhs.filter((f) => f.isActive);
 
   function check(): FieldErrors {
     const e: FieldErrors = {};
@@ -34,7 +46,7 @@ export const AffiliationStep = forwardRef<StepHandle, StepProps>(function Affili
   useImperativeHandle(ref, () => ({
     save: async () => {
       const saved = await submit(check, () =>
-        api<ProfileDto>('/me/profile/affiliation', {
+        api<ProfileDto>(`${base}/affiliation`, {
           method: 'PATCH',
           body: { darId: darId || null, fakhdhId: fakhdhId || null },
         }),
@@ -52,7 +64,7 @@ export const AffiliationStep = forwardRef<StepHandle, StepProps>(function Affili
         id="w-dar"
         label={t('dar')}
         hint={t('affHint')}
-        options={dars.map((d) => ({ value: d.id, label: name(d) }))}
+        options={options(lists.dars, stored.darId)}
         value={darId}
         optional={!dars.length}
         onChange={(e) => {
@@ -65,7 +77,7 @@ export const AffiliationStep = forwardRef<StepHandle, StepProps>(function Affili
         id="w-fakhdh"
         label={t('fakhdh')}
         hint={darId || !dars.length ? undefined : t('fakhdhPickDar')}
-        options={fakhdhs.map((f) => ({ value: f.id, label: name(f) }))}
+        options={options(allFakhdhs, stored.fakhdhId)}
         value={fakhdhId}
         optional={!fakhdhs.length}
         disabled={!darId && dars.length > 0}
@@ -86,6 +98,7 @@ export const ContactStep = forwardRef<StepHandle, StepProps>(function ContactSte
   const [mobile, setMobile] = useState(localSaudiMobile(profile.contact.mobile));
   const [email, setEmail] = useState(profile.contact.email ?? profile.accountEmail ?? '');
   const { fieldErrors: fe, formError, submit } = useStepForm();
+  const { base } = useProfileApi();
 
   function check(): FieldErrors {
     const e: FieldErrors = {};
@@ -99,7 +112,7 @@ export const ContactStep = forwardRef<StepHandle, StepProps>(function ContactSte
   useImperativeHandle(ref, () => ({
     save: async () => {
       const saved = await submit(check, () =>
-        api<ProfileDto>('/me/profile/contact', { method: 'PATCH', body: { mobile, email: email.trim() } }),
+        api<ProfileDto>(`${base}/contact`, { method: 'PATCH', body: { mobile, email: email.trim() } }),
       );
       if (saved) {
         setMobile(localSaudiMobile(saved.contact.mobile));
@@ -148,7 +161,8 @@ export const EducationStep = forwardRef<StepHandle, StepProps>(function Educatio
 ) {
   const t = useTranslations('profile');
   const tv = useTranslations('validation');
-  const name = useLookupName();
+  const options = useLookupOptions();
+  const { base } = useProfileApi();
   const ed = profile.education;
   const [educationLevelId, setLevel] = useState(ed?.educationLevelId ?? '');
   const [graduationYear, setYear] = useState(ed?.graduationYear ? String(ed.graduationYear) : '');
@@ -174,7 +188,7 @@ export const EducationStep = forwardRef<StepHandle, StepProps>(function Educatio
   useImperativeHandle(ref, () => ({
     save: async () => {
       const saved = await submit(check, () =>
-        api<ProfileDto>('/me/profile/education', {
+        api<ProfileDto>(`${base}/education`, {
           method: 'PATCH',
           body: {
             educationLevelId,
@@ -190,14 +204,14 @@ export const EducationStep = forwardRef<StepHandle, StepProps>(function Educatio
     },
   }));
 
-  const countries = (lists.countries ?? []).map((c) => ({ value: c.id, label: name(c) }));
+  const countries = options(lists.countries, ed?.countryId);
   return (
     <Card>
       <Alert>{formError}</Alert>
       <SelectField
         id="w-edu"
         label={t('eduLevel')}
-        options={(lists['education-levels'] ?? []).map((l) => ({ value: l.id, label: name(l) }))}
+        options={options(lists['education-levels'], ed?.educationLevelId)}
         value={educationLevelId}
         onChange={(e) => setLevel(e.target.value)}
         error={fe.educationLevelId}

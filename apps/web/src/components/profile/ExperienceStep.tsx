@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { isEmail } from '@/lib/errors';
-import { useLookupName } from '@/lib/lookups';
+import { useLookupOptions } from '@/lib/lookups';
 import { Alert, Button, Checkbox, ChoiceGroup, Icon, SelectField, TextField } from '@/components/ui';
 import {
   Grid2,
@@ -15,6 +15,7 @@ import {
   type FieldErrors,
   type StepHandle,
   type StepProps,
+  useProfileApi,
 } from './step-kit';
 
 interface PositionDraft {
@@ -50,8 +51,10 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
   const tv = useTranslations('validation');
   const tc = useTranslations('common');
   const ex = profile.experience;
-  const sectors = lists.sectors;
-  const name = useLookupName();
+  const options = useLookupOptions();
+  const { base } = useProfileApi();
+  // Sectors already on a saved position stay selectable after being deactivated.
+  const sectorOptions = options(lists.sectors, ...ex.positions.map((x) => x.sectorId));
   const [has, setHas] = useState<string | null>(
     ex.hasExperience === null ? null : ex.hasExperience ? 'yes' : 'no',
   );
@@ -146,7 +149,7 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
             }
           : { hasExperience: false };
       const saved = await submit(check, () =>
-        api<ProfileDto>('/me/profile/experience', { method: 'PATCH', body }),
+        api<ProfileDto>(`${base}/experience`, { method: 'PATCH', body }),
       );
       if (saved) {
         onProfile(saved);
@@ -217,7 +220,7 @@ export const ExperienceStep = forwardRef<StepHandle, StepProps>(function Experie
                   label={t('posSector')}
                   hint={t('posSectorHint')}
                   optional
-                  options={(sectors ?? []).map((x) => ({ value: x.id, label: name(x) }))}
+                  options={sectorOptions}
                   value={p.sectorId}
                   onChange={(e) => patch(i, { sectorId: e.target.value })}
                   error={fe[`${f}sectorId`]}

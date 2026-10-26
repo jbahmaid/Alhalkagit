@@ -12,7 +12,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { api } from '@/lib/api';
-import { useLookupName } from '@/lib/lookups';
+import { useLookupOptions } from '@/lib/lookups';
 import { Alert, ChoiceGroup, SelectField, TextField } from '@/components/ui';
 import {
   Grid2,
@@ -22,6 +22,7 @@ import {
   type FieldErrors,
   type StepHandle,
   type StepProps,
+  useProfileApi,
 } from './step-kit';
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
@@ -39,7 +40,8 @@ export const PersonalStep = forwardRef<StepHandle, StepProps>(function PersonalS
 ) {
   const t = useTranslations('profile');
   const tv = useTranslations('validation');
-  const name = useLookupName();
+  const options = useLookupOptions();
+  const { base } = useProfileApi();
   const p = profile.personal;
   const [firstName, setFirst] = useState(p?.firstName ?? '');
   const [fatherName, setFather] = useState(p?.fatherName ?? '');
@@ -77,7 +79,7 @@ export const PersonalStep = forwardRef<StepHandle, StepProps>(function PersonalS
   useImperativeHandle(ref, () => ({
     save: async () => {
       const saved = await submit(check, () =>
-        api<ProfileDto>('/me/profile/personal', {
+        api<ProfileDto>(`${base}/personal`, {
           method: 'PATCH',
           body: {
             firstName,
@@ -101,7 +103,7 @@ export const PersonalStep = forwardRef<StepHandle, StepProps>(function PersonalS
     },
   }));
 
-  const countries = (lists.countries ?? []).map((c) => ({ value: c.id, label: name(c) }));
+  const countries = options(lists.countries, p?.nationalityId);
 
   return (
     <>
